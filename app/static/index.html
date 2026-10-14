@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal AI Manager | Executive Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">AI</div>
+        <div>
+          <div class="brand-title">AI Manager</div>
+          <div class="brand-subtitle">Executive Assistant</div>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li>
+          <a class="nav-item active" data-tab="overview" id="nav-overview">
+            <span class="nav-item-icon">⚡</span>
+            <span>Executive Briefing</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="tasks" id="nav-tasks">
+            <span class="nav-item-icon">📋</span>
+            <span>Tasks & Commitments</span>
+            <span class="badge" id="badge-pending-tasks">0</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="jobs" id="nav-jobs">
+            <span class="nav-item-icon">💼</span>
+            <span>Jobs & Fraud Check</span>
+            <span class="badge" id="badge-jobs-count">0</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="career" id="nav-career">
+            <span class="nav-item-icon">📄</span>
+            <span>Resume & Applications</span>
+            <span class="badge" id="badge-applications-count">0</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="reminders" id="nav-reminders">
+            <span class="nav-item-icon">⏰</span>
+            <span>Reminders & Deadlines</span>
+            <span class="badge" id="badge-active-reminders">0</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="approvals" id="nav-approvals">
+            <span class="nav-item-icon">🛡️</span>
+            <span>Security & Approvals</span>
+            <span class="badge danger" id="badge-pending-approvals">0</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="profile" id="nav-profile">
+            <span class="nav-item-icon">👤</span>
+            <span>Profile & Memory</span>
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" data-tab="system" id="nav-system">
+            <span class="nav-item-icon">💾</span>
+            <span>Backups & System</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-mini-card">
+          <div class="user-avatar" id="sidebar-user-avatar">M</div>
+          <div class="user-info">
+            <div class="name" id="sidebar-user-name">Mohil</div>
+            <div class="role" id="sidebar-user-role">B.Tech AI '27</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="page-title" id="page-title">Executive Briefing</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="mode-selector">
+            <label for="mode-select">Autonomy Mode:</label>
+            <select id="mode-select">
+              <option value="ASSISTED">Mode A: Assisted</option>
+              <option value="SUPERVISED">Mode B: Supervised</option>
+              <option value="RESTRICTED_AUTONOMY">Mode C: Restricted Autonomy</option>
+            </select>
+          </div>
+          <div class="time-display" id="time-display">--:--:--</div>
+          <button class="btn btn-primary" id="btn-open-task-modal">
+            <span>+</span> New Task
+          </button>
+        </div>
+      </header>
+
+      <div class="page-container">
+        
+        <!-- TAB 1: OVERVIEW & EXECUTIVE BRIEFING -->
+        <section id="tab-overview" class="tab-content">
+          <!-- Daily Briefing Card -->
+          <div class="briefing-card" id="briefing-card">
+            <div class="briefing-header">
+              <div class="briefing-greeting" id="briefing-greeting">Loading briefing...</div>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-briefing">↻ Refresh Briefing</button>
+            </div>
+            <p class="briefing-summary" id="briefing-summary">Analyzing commitments, priorities, and deadlines...</p>
+            
+            <div class="briefing-grid">
+              <div class="briefing-section">
+                <div class="briefing-section-title">🎯 Top 3 Priorities</div>
+                <ul class="briefing-list" id="briefing-priorities-list">
+                  <li class="briefing-item">Loading priorities...</li>
+                </ul>
+              </div>
+
+              <div class="briefing-section">
+                <div class="briefing-section-title">💡 Actionable Recommendations</div>
+                <ul class="briefing-list" id="briefing-recommendations-list">
+                  <li class="briefing-item">Loading recommendations...</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metric Cards -->
+          <div class="metric-grid" style="margin-top: 1.5rem;">
+            <div class="metric-card">
+              <div class="metric-icon-box icon-purple">⚡</div>
+              <div class="metric-data">
+                <div class="value" id="metric-pending-tasks">0</div>
+                <div class="label">Open Tasks</div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-amber">⚠️</div>
+              <div class="metric-data">
+                <div class="value" id="metric-overdue-tasks">0</div>
+                <div class="label">Overdue Items</div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-cyan">⏰</div>
+              <div class="metric-data">
+                <div class="value" id="metric-active-reminders">0</div>
+                <div class="label">Active Reminders</div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-rose">🛡️</div>
+              <div class="metric-data">
+                <div class="value" id="metric-pending-approvals">0</div>
+                <div class="label">Pending Approvals</div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-emerald">✓</div>
+              <div class="metric-data">
+                <div class="value" id="metric-completed-tasks">0</div>
+                <div class="label">Completed Tasks</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: TASKS & COMMITMENTS -->
+        <section id="tab-tasks" class="tab-content" style="display: none;">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Tasks & Commitments</h2>
+              <button class="btn btn-primary btn-sm" id="btn-add-task-panel">+ Add Task</button>
+            </div>
+            <div class="filter-bar">
+              <select class="filter-select" id="task-filter-status">
+                <option value="">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="AWAITING_APPROVAL">Awaiting Approval</option>
+              </select>
+              <select class="filter-select" id="task-filter-priority">
+                <option value="">All Priorities</option>
+                <option value="P1_URGENT">P1 - Urgent</option>
+                <option value="P2_HIGH">P2 - High</option>
+                <option value="P3_MEDIUM">P3 - Medium</option>
+                <option value="P4_LOW">P4 - Low</option>
+              </select>
+              <select class="filter-select" id="task-filter-category">
+                <option value="">All Categories</option>
+                <option value="STUDY">Study & Academic</option>
+                <option value="JOB_SEARCH">Job Search & Career</option>
+                <option value="PROJECT">Projects</option>
+                <option value="COMMUNICATION">Communication</option>
+                <option value="EXAM">Exams</option>
+                <option value="PERSONAL">Personal</option>
+              </select>
+            </div>
+            <div class="task-list" id="tasks-container">
+              <!-- Dynamically populated -->
+            </div>
+        <!-- TAB 2.1: JOBS & FRAUD CHECK -->
+        <section id="tab-jobs" class="tab-content" style="display: none;">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Opportunities & Evidence-Based Fraud Verification</h2>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary btn-sm" id="btn-discover-jobs">🌐 Discover Live Jobs</button>
+                <button class="btn btn-primary btn-sm" id="btn-add-job-manual">+ Add / Inspect Job</button>
+              </div>
+            </div>
+            <div class="filter-bar">
+              <select class="filter-select" id="job-filter-verification">
+                <option value="">All Verification States</option>
+                <option value="VERIFIED_BY_EVIDENCE">Verified by Evidence</option>
+                <option value="NEEDS_REVIEW">Needs Review</option>
+                <option value="HIGH_RISK">High Risk / Fraud</option>
+              </select>
+              <select class="filter-select" id="job-filter-remote">
+                <option value="">All Locations</option>
+                <option value="true">Remote Only</option>
+                <option value="false">On-site / Hybrid</option>
+              </select>
+            </div>
+            <div class="task-list" id="jobs-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2.2: RESUME & APPLICATIONS TRACKER -->
+        <section id="tab-career" class="tab-content" style="display: none;">
+          <div class="panel" style="margin-bottom: 1.5rem;">
+            <div class="panel-header">
+              <h2 class="panel-title">Master Resume & ATS Alignment</h2>
+              <div class="tag tag-confirmed" id="master-ats-score">ATS Score: 88/100</div>
+            </div>
+            <div id="master-resume-summary-card" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+              Loading verified master resume...
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Applications Tracker & Stages</h2>
+            </div>
+            <div class="task-list" id="applications-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: REMINDERS & DEADLINES -->
+        <section id="tab-reminders" class="tab-content" style="display: none;">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Active Reminders & Alerts</h2>
+              <button class="btn btn-secondary btn-sm" id="btn-trigger-due-reminders">🔔 Check & Deliver Due Now</button>
+            </div>
+            <div class="task-list" id="reminders-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: APPROVALS & AUDIT LOG -->
+        <section id="tab-approvals" class="tab-content" style="display: none;">
+          <div class="panel" style="margin-bottom: 1.5rem;">
+            <div class="panel-header">
+              <h2 class="panel-title">Pending Human Authorizations</h2>
+            </div>
+            <div class="task-list" id="approvals-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Immutable Audit Trail</h2>
+            </div>
+            <div class="task-list" id="audit-logs-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: PROFILE & PERSISTENT MEMORY -->
+        <section id="tab-profile" class="tab-content" style="display: none;">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Verified Profile & Preferences</h2>
+              <button class="btn btn-primary btn-sm" id="btn-save-profile">Save Changes</button>
+            </div>
+            <form id="profile-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" id="prof-fullname" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Education & Degree</label>
+                  <input type="text" id="prof-education" class="form-input">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>College / Institution</label>
+                  <input type="text" id="prof-college" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Expected Graduation</label>
+                  <input type="text" id="prof-graduation" class="form-input">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Timezone</label>
+                  <input type="text" id="prof-timezone" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>Operating Environment</label>
+                  <input type="text" id="prof-os" class="form-input">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Technical Interests (comma separated)</label>
+                <input type="text" id="prof-interests" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Career Objectives (comma separated)</label>
+                <input type="text" id="prof-objectives" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Verified Skills (comma separated)</label>
+                <input type="text" id="prof-skills" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Budget Preference</label>
+                <input type="text" id="prof-budget" class="form-input">
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- TAB 6: BACKUPS & SYSTEM -->
+        <section id="tab-system" class="tab-content" style="display: none;">
+          <div class="panel" style="margin-bottom: 1.5rem;">
+            <div class="panel-header">
+              <h2 class="panel-title">Database Point-In-Time Backup & Restore</h2>
+              <button class="btn btn-primary btn-sm" id="btn-create-backup">Create New Backup</button>
+            </div>
+            <div class="task-list" id="backups-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          
+          <div class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">System Status & Environment</h2>
+            </div>
+            <div id="system-status-info" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.8;">
+              Loading system metrics...
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Task Creation / Edit Modal -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="task-modal-title">Create New Task</h3>
+        <button class="modal-close" id="btn-close-task-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-task-id">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="modal-task-title" class="form-input" placeholder="e.g., Complete Drone ML Project Milestone" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="modal-task-desc" class="form-textarea" rows="3" placeholder="Context, requirements, and next steps..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date & Time</label>
+            <input type="datetime-local" id="modal-task-due" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="modal-task-priority" class="form-select">
+              <option value="P1_URGENT">P1 - Urgent</option>
+              <option value="P2_HIGH">P2 - High</option>
+              <option value="P3_MEDIUM" selected>P3 - Medium</option>
+              <option value="P4_LOW">P4 - Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="modal-task-category" class="form-select">
+              <option value="STUDY">Study & Academic</option>
+              <option value="JOB_SEARCH">Job Search & Career</option>
+              <option value="PROJECT">Projects & Drone/ML</option>
+              <option value="COMMUNICATION">Communication</option>
+              <option value="EXAM">Exam</option>
+              <option value="PERSONAL" selected>Personal</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reminder</label>
+            <select id="modal-task-reminder" class="form-select">
+              <option value="">No reminder</option>
+              <option value="15">15 minutes before</option>
+              <option value="60">1 hour before</option>
+              <option value="1440">1 day before</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="modal-task-confirmed" checked>
+            <span>Confirmed commitment (uncheck if inferred from email/note needing verification)</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-task-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-task">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job Add Modal -->
+  <div class="modal-overlay" id="job-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Inspect & Add Job Listing</h3>
+        <button class="modal-close" id="btn-close-job-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Job Title *</label>
+          <input type="text" id="modal-job-title" class="form-input" placeholder="e.g. AI / Machine Learning Intern" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Company *</label>
+            <input type="text" id="modal-job-company" class="form-input" placeholder="e.g. Anthropic" required>
+          </div>
+          <div class="form-group">
+            <label>Location / Remote</label>
+            <input type="text" id="modal-job-location" class="form-input" placeholder="e.g. Remote / India">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Job URL (for evidence verification) *</label>
+          <input type="url" id="modal-job-url" class="form-input" placeholder="https://company.greenhouse.io/jobs/..." required>
+        </div>
+        <div class="form-group">
+          <label>Job Description & Requirements *</label>
+          <textarea id="modal-job-desc" class="form-textarea" rows="4" placeholder="Paste full job description text for ATS matching and fraud detection..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-job-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-job">Run Fraud Check & Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tailored Resume & Application Studio Modal -->
+  <div class="modal-overlay" id="tailored-modal">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="tailored-modal-title">Factual Resume & Application Studio</h3>
+        <button class="modal-close" id="btn-close-tailored-modal">&times;</button>
+      </div>
+      <div class="modal-body" id="tailored-modal-body">
+        <!-- Dynamically populated -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-close-tailored-btn">Close</button>
+        <button class="btn btn-primary" id="btn-track-this-app">Track Application (Request Approval)</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
