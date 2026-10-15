@@ -18,8 +18,10 @@ from app.api import (
     routes_briefing,
     routes_system,
     routes_career,
-    routes_communication
+    routes_communication,
+    routes_webhooks
 )
+from app.services.messaging_bot_service import poll_telegram_updates_once
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("PersonalAIManager")
@@ -35,6 +37,12 @@ async def lifespan(app: FastAPI):
     # Start reminder processor background job (every 60 seconds)
     logger.info("Starting background reminder scheduler...")
     scheduler.add_job(process_due_reminders, "interval", seconds=60, id="reminder_check", replace_existing=True)
+    
+    # Start Telegram update poller (every 3 seconds) if token configured
+    if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
+        logger.info("Starting Telegram Bot polling engine...")
+        scheduler.add_job(poll_telegram_updates_once, "interval", seconds=3, id="telegram_poll", replace_existing=True)
+
     scheduler.start()
     
     yield
@@ -59,6 +67,7 @@ app.include_router(routes_briefing.router)
 app.include_router(routes_system.router)
 app.include_router(routes_career.router)
 app.include_router(routes_communication.router)
+app.include_router(routes_webhooks.router)
 
 # Static and Web Dashboard
 STATIC_DIR = Path(__file__).parent / "static"

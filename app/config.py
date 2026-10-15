@@ -55,6 +55,17 @@ class Settings(BaseSettings):
     LINKEDIN_HEADLESS: bool = True
     MCP_SIMULATION_FALLBACK: bool = True  # Safely simulate when live credentials not yet set
 
+    # Messaging Integrations: Telegram & WhatsApp
+    TELEGRAM_ENABLED: bool = True
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_ALLOWED_CHAT_ID: str = ""  # Restrict to user's chat ID for security
+
+    WHATSAPP_ENABLED: bool = True
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_WHATSAPP_NUMBER: str = "whatsapp:+14155238886"  # Default Twilio Sandbox
+    WHATSAPP_ALLOWED_NUMBER: str = ""  # Restrict to user's phone number
+
 settings = Settings()
 settings.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
