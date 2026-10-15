@@ -31,5 +31,17 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_MODEL: str = "default"
 
+    # MCP (Model Context Protocol) Settings
+    GMAIL_MCP_ENABLED: bool = True
+    GMAIL_ADDRESS: str = ""
+    GMAIL_APP_PASSWORD: str = ""  # 16-character Google App Password
+    GMAIL_CREDENTIALS_PATH: str = ""  # Optional path to OAuth credentials.json
+    
+    LINKEDIN_MCP_ENABLED: bool = True
+    LINKEDIN_LI_AT_COOKIE: str = ""  # li_at cookie for authenticated browser session
+    LINKEDIN_HEADLESS: bool = True
+    MCP_SIMULATION_FALLBACK: bool = True  # Safely simulate when live credentials not yet set
+
 settings = Settings()
 settings.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+

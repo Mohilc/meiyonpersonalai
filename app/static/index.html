@@ -50,7 +50,15 @@
           </a>
         </li>
         <li>
+          <a class="nav-item" data-tab="comms" id="nav-comms">
+            <span class="nav-item-icon">📬</span>
+            <span>Communications & MCP</span>
+            <span class="badge" id="badge-emails-count">0</span>
+          </a>
+        </li>
+        <li>
           <a class="nav-item" data-tab="reminders" id="nav-reminders">
+
             <span class="nav-item-icon">⏰</span>
             <span>Reminders & Deadlines</span>
             <span class="badge" id="badge-active-reminders">0</span>
@@ -265,8 +273,141 @@
           </div>
         </section>
 
+        <!-- TAB 2.3: COMMUNICATIONS & MCP (EMAIL & LINKEDIN) -->
+        <section id="tab-comms" class="tab-content" style="display: none;">
+          <!-- MCP Status & Quick Actions Bar -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <!-- Gmail MCP Card -->
+            <div class="panel" style="padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.5rem;">✉️</span>
+                    <div>
+                      <h3 style="font-size: 1.05rem; font-weight: 600;">Gmail MCP Server</h3>
+                      <div id="mcp-gmail-mode" style="font-size: 0.75rem; color: var(--text-muted);">Checking status...</div>
+                    </div>
+                  </div>
+                  <span class="tag tag-confirmed" id="mcp-gmail-status-badge">Connected</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;" id="mcp-gmail-addr">
+                  Configured: Loading...
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-primary btn-sm" id="btn-sync-gmail" style="flex: 1;">
+                  ↻ Sync Gmail (MCP)
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-config-mcp" title="Configure MCP Credentials">
+                  ⚙️ Config
+                </button>
+              </div>
+            </div>
+
+            <!-- LinkedIn MCP Card -->
+            <div class="panel" style="padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.5rem;">💼</span>
+                    <div>
+                      <h3 style="font-size: 1.05rem; font-weight: 600;">LinkedIn MCP Server</h3>
+                      <div id="mcp-linkedin-mode" style="font-size: 0.75rem; color: var(--text-muted);">Browser Automation</div>
+                    </div>
+                  </div>
+                  <span class="tag tag-confirmed" id="mcp-linkedin-status-badge">Connected</span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;" id="mcp-linkedin-session">
+                  Session: Verified Sandbox / Browser Ready
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-primary btn-sm" id="btn-sync-linkedin" style="flex: 1;">
+                  ↻ Sync LinkedIn (MCP)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dual Column Grid: Emails on Left, LinkedIn on Right -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem;">
+            <!-- Left: Email Triage Panel -->
+            <div class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">Triaged Emails & Inquiries</h2>
+                <span class="tag tag-inferred" id="inbox-count-tag">0 messages</span>
+              </div>
+              <div class="task-list" id="emails-container">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Right: LinkedIn Recruiter Activity & Assistant -->
+            <div class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">LinkedIn Recruiter Hub</h2>
+                <span class="tag tag-confirmed" id="linkedin-count-tag">0 items</span>
+              </div>
+              
+              <!-- Sub-tabs for LinkedIn -->
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                <button class="btn btn-secondary btn-sm active" id="btn-li-tab-activity">Activity & Messages</button>
+                <button class="btn btn-secondary btn-sm" id="btn-li-tab-post">Draft Post</button>
+                <button class="btn btn-secondary btn-sm" id="btn-li-tab-note">Connection Note</button>
+              </div>
+
+              <!-- View 1: Synced Activity -->
+              <div id="li-view-activity" class="task-list" style="max-height: 520px; overflow-y: auto;">
+                <!-- Dynamically populated -->
+              </div>
+
+              <!-- View 2: Post Generator -->
+              <div id="li-view-post" style="display: none;">
+                <div class="form-group">
+                  <label>Post Topic / Focus</label>
+                  <input type="text" id="li-post-topic" class="form-input" value="Drone Systems & ML Telemetry">
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-generate-post" style="margin-bottom: 1rem;">Generate Post Draft</button>
+                <div id="li-post-result" style="display: none; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem;">
+                  <div id="li-post-hook" style="font-weight: 600; margin-bottom: 0.5rem; color: var(--accent-cyan);"></div>
+                  <div id="li-post-body" style="white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6; color: var(--text-main); margin-bottom: 0.75rem;"></div>
+                  <div id="li-post-hashtags" style="font-size: 0.8rem; color: var(--primary);"></div>
+                </div>
+              </div>
+
+              <!-- View 3: Connection Note Generator -->
+              <div id="li-view-note" style="display: none;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Recipient Name</label>
+                    <input type="text" id="li-note-name" class="form-input" placeholder="e.g. Dr. Rajesh Kumar">
+                  </div>
+                  <div class="form-group">
+                    <label>Recipient Role</label>
+                    <input type="text" id="li-note-role" class="form-input" placeholder="e.g. Lead Roboticist">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Company / Institution</label>
+                  <input type="text" id="li-note-company" class="form-input" placeholder="e.g. AeroVision Labs">
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-generate-note" style="margin-bottom: 1rem;">Generate Connection Note</button>
+                <div id="li-note-result" style="display: none; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Character Count</span>
+                    <span class="tag tag-confirmed" id="li-note-chars">0 / 300</span>
+                  </div>
+                  <div id="li-note-body" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
         <!-- TAB 3: REMINDERS & DEADLINES -->
         <section id="tab-reminders" class="tab-content" style="display: none;">
+
           <div class="panel">
             <div class="panel-header">
               <h2 class="panel-title">Active Reminders & Alerts</h2>
@@ -498,7 +639,6 @@
       </div>
       <div class="modal-body" id="tailored-modal-body">
         <!-- Dynamically populated -->
-      </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="btn-close-tailored-btn">Close</button>
         <button class="btn btn-primary" id="btn-track-this-app">Track Application (Request Approval)</button>
@@ -506,6 +646,48 @@
     </div>
   </div>
 
+  <!-- MCP Configuration Modal -->
+  <div class="modal-overlay" id="mcp-config-modal">
+
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Model Context Protocol (MCP) Configuration</h3>
+        <button class="modal-close" id="btn-close-mcp-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6;">
+          Your Personal AI Manager connects to Gmail and LinkedIn MCP servers. When live credentials are not set, the agent uses a high-fidelity simulation sandbox so all features and security triage work out of the box.
+        </div>
+        
+        <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.5rem;">Gmail MCP Configuration</h4>
+        <div class="form-group">
+          <label>Gmail Address</label>
+          <input type="email" id="cfg-gmail-addr" class="form-input" placeholder="e.g. mohil@gmail.com">
+        </div>
+        <div class="form-group">
+          <label>Google 16-Character App Password (IMAP/SMTP)</label>
+          <input type="password" id="cfg-gmail-pwd" class="form-input" placeholder="xxxx xxxx xxxx xxxx">
+          <div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.25rem;">
+            Generate in Google Account &gt; Security &gt; 2-Step Verification &gt; App passwords.
+          </div>
+        </div>
+
+        <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--accent-cyan); margin-top: 1.25rem; margin-bottom: 0.5rem;">LinkedIn Browser MCP Configuration</h4>
+        <div class="form-group">
+          <label>LinkedIn 'li_at' Session Cookie</label>
+          <input type="password" id="cfg-linkedin-cookie" class="form-input" placeholder="Paste li_at cookie for authenticated Playwright browser">
+          <div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.25rem;">
+            Open LinkedIn in browser &gt; F12 &gt; Application &gt; Cookies &gt; copy 'li_at' value.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-close-mcp-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/app.js"></script>
 </body>
 </html>
+

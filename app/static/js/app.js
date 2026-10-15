@@ -124,8 +124,46 @@ const elements = {
   // System Tab
   backupsContainer: document.getElementById('backups-container'),
   btnCreateBackup: document.getElementById('btn-create-backup'),
-  systemStatusInfo: document.getElementById('system-status-info')
+  systemStatusInfo: document.getElementById('system-status-info'),
+
+  // Communications & MCP Tab
+  badgeEmailsCount: document.getElementById('badge-emails-count'),
+  btnSyncGmail: document.getElementById('btn-sync-gmail'),
+  btnSyncLinkedin: document.getElementById('btn-sync-linkedin'),
+  btnConfigMcp: document.getElementById('btn-config-mcp'),
+  mcpConfigModal: document.getElementById('mcp-config-modal'),
+  btnCloseMcpModal: document.getElementById('btn-close-mcp-modal'),
+  btnCloseMcpBtn: document.getElementById('btn-close-mcp-btn'),
+  emailsContainer: document.getElementById('emails-container'),
+  inboxCountTag: document.getElementById('inbox-count-tag'),
+  linkedinCountTag: document.getElementById('linkedin-count-tag'),
+  liViewActivity: document.getElementById('li-view-activity'),
+  liViewPost: document.getElementById('li-view-post'),
+  liViewNote: document.getElementById('li-view-note'),
+  btnLiTabActivity: document.getElementById('btn-li-tab-activity'),
+  btnLiTabPost: document.getElementById('btn-li-tab-post'),
+  btnLiTabNote: document.getElementById('btn-li-tab-note'),
+  btnGeneratePost: document.getElementById('btn-generate-post'),
+  btnGenerateNote: document.getElementById('btn-generate-note'),
+  liPostTopic: document.getElementById('li-post-topic'),
+  liPostResult: document.getElementById('li-post-result'),
+  liPostHook: document.getElementById('li-post-hook'),
+  liPostBody: document.getElementById('li-post-body'),
+  liPostHashtags: document.getElementById('li-post-hashtags'),
+  liNoteName: document.getElementById('li-note-name'),
+  liNoteRole: document.getElementById('li-note-role'),
+  liNoteCompany: document.getElementById('li-note-company'),
+  liNoteResult: document.getElementById('li-note-result'),
+  liNoteChars: document.getElementById('li-note-chars'),
+  liNoteBody: document.getElementById('li-note-body'),
+  mcpGmailStatusBadge: document.getElementById('mcp-gmail-status-badge'),
+  mcpGmailMode: document.getElementById('mcp-gmail-mode'),
+  mcpGmailAddr: document.getElementById('mcp-gmail-addr'),
+  mcpLinkedinStatusBadge: document.getElementById('mcp-linkedin-status-badge'),
+  mcpLinkedinMode: document.getElementById('mcp-linkedin-mode'),
+  mcpLinkedinSession: document.getElementById('mcp-linkedin-session')
 };
+
 
 // Utilities
 const api = {
@@ -198,6 +236,7 @@ function setupTabs() {
     tasks: 'Tasks & Commitments',
     jobs: 'Job Discovery & Fraud Check',
     career: 'Resume Studio & Applications',
+    comms: 'Communications & MCP (Email & LinkedIn)',
     reminders: 'Reminders & Deadlines',
     approvals: 'Security & Approvals',
     profile: 'Profile & Memory',
@@ -229,12 +268,14 @@ function setupTabs() {
     if (tab === 'tasks') loadTasks();
     if (tab === 'jobs') loadJobs();
     if (tab === 'career') { loadMasterResume(); loadApplications(); }
+    if (tab === 'comms') loadCommunications();
     if (tab === 'reminders') loadReminders();
     if (tab === 'approvals') loadApprovals();
     if (tab === 'profile') loadProfile();
     if (tab === 'system') loadSystemInfo();
   }
 }
+
 
 // Initial App Load
 async function initApp() {
@@ -249,10 +290,12 @@ async function initApp() {
       loadTasks(),
       loadJobs(),
       loadApplications(),
+      loadCommunications(),
       loadReminders(),
       loadApprovals(),
       loadSystemInfo()
     ]);
+
   } catch (err) {
     console.error("Initialization error:", err);
   }
@@ -1116,6 +1159,266 @@ async function saveJobManual() {
   }
 }
 
+// ==========================================
+// Communications & MCP Functions
+// ==========================================
+async function loadCommunications() {
+  try {
+    const [mcpStatus, emails, interactions] = await Promise.all([
+      api.get('/api/communication/mcp/status').catch(() => null),
+      api.get('/api/communication/emails?limit=50').catch(() => []),
+      api.get('/api/communication/linkedin/interactions?limit=50').catch(() => [])
+    ]);
+
+    // 1. Update MCP Status Badges
+    if (mcpStatus) {
+      if (elements.mcpGmailMode) {
+        elements.mcpGmailMode.textContent = mcpStatus.gmail.mode || 'Ready';
+      }
+      if (elements.mcpGmailAddr) {
+        elements.mcpGmailAddr.textContent = 'Account: ' + (mcpStatus.gmail.configured_address || 'Not Configured');
+      }
+      if (elements.mcpGmailStatusBadge) {
+        elements.mcpGmailStatusBadge.textContent = mcpStatus.gmail.credentials_present ? 'Live IMAP' : 'Simulation Sandbox';
+        elements.mcpGmailStatusBadge.className = mcpStatus.gmail.credentials_present ? 'tag tag-confirmed' : 'tag tag-inferred';
+      }
+
+      if (elements.mcpLinkedinMode) {
+        elements.mcpLinkedinMode.textContent = mcpStatus.linkedin.mode || 'Browser Ready';
+      }
+      if (elements.mcpLinkedinSession) {
+        elements.mcpLinkedinSession.textContent = mcpStatus.linkedin.session_cookie_configured ? 'Authenticated Session Active' : 'Simulation Sandbox Active';
+      }
+      if (elements.mcpLinkedinStatusBadge) {
+        elements.mcpLinkedinStatusBadge.textContent = mcpStatus.linkedin.session_cookie_configured ? 'Live Session' : 'Simulation Sandbox';
+        elements.mcpLinkedinStatusBadge.className = mcpStatus.linkedin.session_cookie_configured ? 'tag tag-confirmed' : 'tag tag-inferred';
+      }
+    }
+
+    // 2. Render Emails
+    renderEmails(emails);
+
+    // 3. Render LinkedIn Interactions
+    renderLinkedInInteractions(interactions);
+
+    // Update Badge
+    if (elements.badgeEmailsCount) {
+      elements.badgeEmailsCount.textContent = emails.length;
+    }
+  } catch (err) {
+    console.error("Failed loading communications:", err);
+  }
+}
+
+function renderEmails(emails) {
+  if (!elements.emailsContainer) return;
+  if (elements.inboxCountTag) elements.inboxCountTag.textContent = `${emails.length} messages`;
+
+  if (!emails || emails.length === 0) {
+    elements.emailsContainer.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        No emails synced yet. Click <strong>↻ Sync Gmail (MCP)</strong> to pull unread messages.
+      </div>
+    `;
+    return;
+  }
+
+  elements.emailsContainer.innerHTML = emails.map(m => {
+    const isPhishing = m.phishing_risk === 'HIGH';
+    const hasFlags = m.phishing_flags && m.phishing_flags.length > 0;
+    const isRecruiter = m.is_recruiter;
+    
+    let riskTag = `<span class="tag tag-confirmed">Phishing: Low</span>`;
+    if (m.phishing_risk === 'HIGH') riskTag = `<span class="tag tag-high-risk">⚠️ Phishing: High Risk</span>`;
+    else if (m.phishing_risk === 'MEDIUM') riskTag = `<span class="tag tag-needs-review">⚠️ Phishing: Medium</span>`;
+
+    let intentTag = `<span class="tag tag-inferred">${escapeHtml(m.detected_intent)}</span>`;
+    if (m.detected_intent === 'INTERVIEW') intentTag = `<span class="tag tag-confirmed" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">🎯 INTERVIEW</span>`;
+    else if (m.detected_intent === 'OFFER') intentTag = `<span class="tag tag-confirmed" style="background: rgba(6, 182, 212, 0.2); color: #06b6d4;">🎉 OFFER</span>`;
+
+    let securityNotice = '';
+    if (hasFlags) {
+      securityNotice = `
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin-top: 0.5rem; font-size: 0.8rem; color: var(--accent-rose);">
+          🛡️ <strong>Security Sanitizer:</strong> ${m.phishing_flags.map(f => escapeHtml(f)).join(' • ')}
+        </div>
+      `;
+    }
+
+    let datesHtml = '';
+    if (m.extracted_dates && m.extracted_dates.length > 0) {
+      datesHtml = `
+        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--accent-cyan);">
+          📅 <strong>Dates Detected:</strong> ${m.extracted_dates.map(d => `${escapeHtml(d.text)} (${d.status})`).join(', ')}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="task-card" style="margin-bottom: 1rem; border-left: 3px solid ${isPhishing ? 'var(--accent-rose)' : isRecruiter ? 'var(--accent-emerald)' : 'var(--primary)'};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+          <div>
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">${escapeHtml(m.subject)}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem;">From: <strong>${escapeHtml(m.sender)}</strong> • ${new Date(m.received_at).toLocaleDateString()}</div>
+          </div>
+          <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+            ${intentTag}
+            ${riskTag}
+          </div>
+        </div>
+        
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: var(--radius-sm);">${escapeHtml(m.body)}</p>
+        
+        ${securityNotice}
+        ${datesHtml}
+
+        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 0.8rem; color: var(--text-sub);">
+            ${m.proposed_reply ? '💡 Proposed response drafted' : ''}
+          </div>
+          ${m.proposed_reply && !isPhishing ? `
+            <button class="btn btn-secondary btn-sm" onclick="queueEmailReplyApproval('${m.id}')">
+              ✍️ Request Reply Approval
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderLinkedInInteractions(interactions) {
+  if (!elements.liViewActivity) return;
+  if (elements.linkedinCountTag) elements.linkedinCountTag.textContent = `${interactions.length} items`;
+
+  if (!interactions || interactions.length === 0) {
+    elements.liViewActivity.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        No LinkedIn activity synced yet. Click <strong>↻ Sync LinkedIn (MCP)</strong> to pull recruiter conversations.
+      </div>
+    `;
+    return;
+  }
+
+  elements.liViewActivity.innerHTML = interactions.map(item => {
+    const isConn = item.interaction_type === 'CONNECTION_REQUEST';
+    return `
+      <div class="task-card" style="margin-bottom: 0.75rem; border-left: 3px solid ${isConn ? 'var(--accent-purple)' : 'var(--accent-cyan)'};">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">${escapeHtml(item.sender_name || 'Anonymous User')}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(item.sender_title || '')} ${item.company ? '• ' + escapeHtml(item.company) : ''}</div>
+          </div>
+          <span class="tag ${isConn ? 'tag-confirmed' : 'tag-inferred'}">${isConn ? 'Invitation' : 'Direct Message'}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-main); margin-top: 0.5rem; line-height: 1.5; background: rgba(0,0,0,0.15); padding: 0.5rem; border-radius: var(--radius-sm);">${escapeHtml(item.content)}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-sub);">
+          <span>${item.profile_url ? `<a href="${item.profile_url}" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">View LinkedIn Profile ↗</a>` : ''}</span>
+          <span>${new Date(item.created_at).toLocaleDateString()}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function syncGmailMCP() {
+  try {
+    if (elements.btnSyncGmail) {
+      elements.btnSyncGmail.disabled = true;
+      elements.btnSyncGmail.textContent = '↻ Syncing...';
+    }
+    const res = await api.post('/api/communication/mcp/sync-emails', { limit: 10 });
+    alert(`Gmail MCP Sync Complete!\n${res.message}`);
+    await loadCommunications();
+    await loadBriefing();
+  } catch (err) {
+    alert("Gmail Sync Error: " + err.message);
+  } finally {
+    if (elements.btnSyncGmail) {
+      elements.btnSyncGmail.disabled = false;
+      elements.btnSyncGmail.textContent = '↻ Sync Gmail (MCP)';
+    }
+  }
+}
+
+async function syncLinkedInMCP() {
+  try {
+    if (elements.btnSyncLinkedin) {
+      elements.btnSyncLinkedin.disabled = true;
+      elements.btnSyncLinkedin.textContent = '↻ Syncing...';
+    }
+    const res = await api.post('/api/communication/mcp/sync-linkedin', { limit: 10 });
+    alert(`LinkedIn MCP Sync Complete!\n${res.message}`);
+    await loadCommunications();
+    await loadBriefing();
+  } catch (err) {
+    alert("LinkedIn Sync Error: " + err.message);
+  } finally {
+    if (elements.btnSyncLinkedin) {
+      elements.btnSyncLinkedin.disabled = false;
+      elements.btnSyncLinkedin.textContent = '↻ Sync LinkedIn (MCP)';
+    }
+  }
+}
+
+async function queueEmailReplyApproval(emailId) {
+  try {
+    const res = await api.post(`/api/communication/emails/${emailId}/reply`, {});
+    alert(`Approval Request Created!\n${res.message}\nAction queued under Security & Approvals.`);
+    await loadApprovals();
+    await loadBriefing();
+  } catch (err) {
+    alert("Failed to queue reply approval: " + err.message);
+  }
+}
+
+async function generateLinkedInPost() {
+  const topic = elements.liPostTopic.value.trim() || "Autonomous Drone Systems & Agentic AI";
+  try {
+    elements.btnGeneratePost.disabled = true;
+    elements.btnGeneratePost.textContent = "Generating...";
+    const post = await api.post('/api/communication/linkedin/post-draft', { topic });
+    elements.liPostResult.style.display = 'block';
+    elements.liPostHook.textContent = post.hook;
+    elements.liPostBody.textContent = post.post_body + "\n\n" + post.call_to_action;
+    elements.liPostHashtags.textContent = post.hashtags.join(' ');
+  } catch (err) {
+    alert("Failed generating post: " + err.message);
+  } finally {
+    elements.btnGeneratePost.disabled = false;
+    elements.btnGeneratePost.textContent = "Generate Post Draft";
+  }
+}
+
+async function generateLinkedInConnectionNote() {
+  const recipient_name = elements.liNoteName.value.trim();
+  const recipient_role = elements.liNoteRole.value.trim();
+  const company = elements.liNoteCompany.value.trim();
+
+  if (!recipient_name || !company) {
+    alert("Please provide recipient name and company.");
+    return;
+  }
+
+  try {
+    elements.btnGenerateNote.disabled = true;
+    elements.btnGenerateNote.textContent = "Generating...";
+    const res = await api.post('/api/communication/linkedin/connection-note', {
+      recipient_name,
+      recipient_role: recipient_role || "Engineering Lead",
+      company
+    });
+    elements.liNoteResult.style.display = 'block';
+    elements.liNoteChars.textContent = `${res.character_count} / 300 characters`;
+    elements.liNoteBody.textContent = res.note;
+  } catch (err) {
+    alert("Failed generating note: " + err.message);
+  } finally {
+    elements.btnGenerateNote.disabled = false;
+    elements.btnGenerateNote.textContent = "Generate Connection Note";
+  }
+}
+
 // Event Listeners
 function setupEventListeners() {
   elements.btnOpenTaskModal.addEventListener('click', () => openTaskModal());
@@ -1141,12 +1444,54 @@ function setupEventListeners() {
   if (elements.btnCloseTailoredModal) elements.btnCloseTailoredModal.addEventListener('click', () => elements.tailoredModal.classList.remove('active'));
   if (elements.btnCloseTailoredBtn) elements.btnCloseTailoredBtn.addEventListener('click', () => elements.tailoredModal.classList.remove('active'));
 
+  // Communications & MCP listeners
+  if (elements.btnSyncGmail) elements.btnSyncGmail.addEventListener('click', syncGmailMCP);
+  if (elements.btnSyncLinkedin) elements.btnSyncLinkedin.addEventListener('click', syncLinkedInMCP);
+  if (elements.btnConfigMcp) elements.btnConfigMcp.addEventListener('click', () => elements.mcpConfigModal.classList.add('active'));
+  if (elements.btnCloseMcpModal) elements.btnCloseMcpModal.addEventListener('click', () => elements.mcpConfigModal.classList.remove('active'));
+  if (elements.btnCloseMcpBtn) elements.btnCloseMcpBtn.addEventListener('click', () => elements.mcpConfigModal.classList.remove('active'));
+  if (elements.btnGeneratePost) elements.btnGeneratePost.addEventListener('click', generateLinkedInPost);
+  if (elements.btnGenerateNote) elements.btnGenerateNote.addEventListener('click', generateLinkedInConnectionNote);
+
+  // Sub-tabs for LinkedIn
+  if (elements.btnLiTabActivity) {
+    elements.btnLiTabActivity.addEventListener('click', () => {
+      elements.liViewActivity.style.display = 'block';
+      elements.liViewPost.style.display = 'none';
+      elements.liViewNote.style.display = 'none';
+      elements.btnLiTabActivity.classList.add('active');
+      elements.btnLiTabPost.classList.remove('active');
+      elements.btnLiTabNote.classList.remove('active');
+    });
+  }
+  if (elements.btnLiTabPost) {
+    elements.btnLiTabPost.addEventListener('click', () => {
+      elements.liViewActivity.style.display = 'none';
+      elements.liViewPost.style.display = 'block';
+      elements.liViewNote.style.display = 'none';
+      elements.btnLiTabActivity.classList.remove('active');
+      elements.btnLiTabPost.classList.add('active');
+      elements.btnLiTabNote.classList.remove('active');
+    });
+  }
+  if (elements.btnLiTabNote) {
+    elements.btnLiTabNote.addEventListener('click', () => {
+      elements.liViewActivity.style.display = 'none';
+      elements.liViewPost.style.display = 'none';
+      elements.liViewNote.style.display = 'block';
+      elements.btnLiTabActivity.classList.remove('active');
+      elements.btnLiTabPost.classList.remove('active');
+      elements.btnLiTabNote.classList.add('active');
+    });
+  }
+
   elements.btnRefreshBriefing.addEventListener('click', loadBriefing);
   elements.btnTriggerDueReminders.addEventListener('click', triggerDueReminders);
   elements.btnSaveProfile.addEventListener('click', saveProfile);
   elements.btnCreateBackup.addEventListener('click', createBackup);
   elements.modeSelect.addEventListener('change', changeAutonomyMode);
 }
+
 
 function escapeHtml(str) {
   if (!str) return '';

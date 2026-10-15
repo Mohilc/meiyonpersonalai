@@ -141,13 +141,13 @@ def triage_incoming_email(data: EmailMessageCreate) -> EmailMessageResponse:
             INSERT INTO email_messages (
                 id, sender, recipient, subject, body, received_at,
                 is_recruiter, detected_intent, phishing_risk, phishing_flags,
-                extracted_dates, proposed_reply, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UNREAD', ?);
+                extracted_dates, proposed_reply, status, external_id, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UNREAD', ?, ?);
             """, (
                 msg_id, data.sender, data.recipient, data.subject, safe_body, recv_time,
                 1 if is_recruiter else 0, intent.value, phishing_risk.value,
                 json.dumps(phishing_flags), json.dumps(extracted_dates),
-                proposed_reply, now_iso
+                proposed_reply, getattr(data, "external_id", None), now_iso
             ))
         return get_email_message(msg_id)
     finally:
@@ -311,6 +311,7 @@ def generate_weekly_report() -> WeeklyReportResponse:
     )
 
 def _row_to_email(row) -> EmailMessageResponse:
+    keys = row.keys() if hasattr(row, "keys") else []
     return EmailMessageResponse(
         id=row["id"],
         sender=row["sender"],
@@ -325,5 +326,7 @@ def _row_to_email(row) -> EmailMessageResponse:
         extracted_dates=json.loads(row["extracted_dates"]),
         proposed_reply=row["proposed_reply"],
         status=row["status"],
+        external_id=row["external_id"] if "external_id" in keys else None,
         created_at=row["created_at"]
     )
+

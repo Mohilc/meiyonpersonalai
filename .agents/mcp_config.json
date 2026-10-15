@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "gmail": {
+      "command": "C:\\Users\\MOHIL\\Desktop\\agenticai\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_servers.gmail_server"],
+      "env": {
+        "PYTHONPATH": "C:\\Users\\MOHIL\\Desktop\\agenticai"
+      }
+    },
+    "linkedin": {
+      "command": "C:\\Users\\MOHIL\\Desktop\\agenticai\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_servers.linkedin_server"],
+      "env": {
+        "PYTHONPATH": "C:\\Users\\MOHIL\\Desktop\\agenticai"
+      }
+    }
+  }
+}

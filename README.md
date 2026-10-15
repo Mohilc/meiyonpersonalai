@@ -116,17 +116,21 @@ agenticai/
 - **Application Tracking**: Tracks company, role, stage history (`DRAFTED`, `READY_FOR_APPROVAL`, `SUBMITTED`, `INTERVIEW_SCHEDULED`, `OFFER`, `REJECTED`), follow-up dates, and recruiter details.
 - **Human Authorization Gate**: Submitting applications requires explicit user authorization via the security gate.
 
-### C. Email & Recruiter Triage (with Prompt-Injection Defense)
+### C. Email & Recruiter Triage (with Gmail MCP Server & Injection Defense)
+- **Model Context Protocol (MCP)**: Communicates directly with Gmail via standard MCP tools (`list_unread_emails`, `read_email`, `draft_email_reply`, `send_email`, `get_mailbox_status`).
+- **Authentication Options**: Supports Google Account 16-character App Password (IMAP/SMTP SSL) or Google Cloud OAuth2 credentials, with automatic high-fidelity Sandbox simulation fallback when credentials are not yet entered.
 - **Prompt Injection Neutralization**: Sanitizes untrusted incoming email content, blocking prompt overrides (`ignore previous instructions`, `developer mode`, `reveal secrets`).
 - **Phishing & Scam Classifier**: Flags employment scams and fake hiring attempts.
 - **Intent Detection**: Classifies messages into `INTERVIEW`, `OFFER`, `REJECTION`, `INFO_REQUEST`, or `GENERAL`.
 - **Date Extraction**: Extracts meeting and deadline dates, distinguishing confirmed appointments from suggested/inferred times.
 - **Draft Replies with Approval Gate**: Drafts professional responses, requiring user approval before any external message transmission.
 
-### D. Permitted LinkedIn Career Assistant
-- Generates polished, professional headline and About section drafts tailored to Mohil's academic profile.
-- Contextual, authentic post drafts highlighting learnings from drone systems and agentic AI.
-- Personalized connection request notes strictly under LinkedIn's 300-character limit.
+### D. Permitted LinkedIn Career Assistant (with Browser Automation MCP Server)
+- **Model Context Protocol (MCP)**: Communicates with LinkedIn via Playwright browser automation and session cookie (`li_at`) via standard MCP tools (`get_linkedin_profile`, `list_connection_requests`, `list_recent_messages`, `send_connection_invite`, `publish_post`, `get_linkedin_status`).
+- **Profile Guidance**: Generates polished, professional headline and About section drafts tailored to Mohil's academic profile.
+- **Authentic Post Drafts**: Contextual drafts highlighting learnings from drone systems and agentic AI.
+- **Connection Notes**: Personalized connection request notes strictly under LinkedIn's 300-character limit.
+- **Human Authorization Gate**: Publishing posts or sending invitations externally requires explicit approval in the security gate.
 
 ### E. Schedule, Reminders & Executive Reporting
 - **Timezone Awareness**: Configured for `Asia/Kolkata` (UTC+05:30).
@@ -135,6 +139,43 @@ agenticai/
 - **Active Reminders Engine**: Automatically checks for due reminders in the background every 60 seconds, recording honest delivery timestamps, snooze counts, and escalation status.
 
 ---
+
+## 3.1 Model Context Protocol (MCP) Setup & Tools
+
+### Antigravity IDE Integration
+The workspace includes `.agents/mcp_config.json` configuring the Gmail and LinkedIn MCP servers:
+```json
+{
+  "mcpServers": {
+    "gmail": {
+      "command": ".venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_servers.gmail_server"],
+      "env": { "PYTHONPATH": "." }
+    },
+    "linkedin": {
+      "command": ".venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_servers.linkedin_server"],
+      "env": { "PYTHONPATH": "." }
+    }
+  }
+}
+```
+
+### Personal AI Manager App Configuration (.env)
+Copy `.env.example` to `.env` to configure your live credentials:
+```env
+# Gmail App Password (Google Account > Security > 2-Step Verification > App passwords)
+GMAIL_ADDRESS="mohil@example.com"
+GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"
+
+# LinkedIn Session Cookie (F12 > Application > Cookies > li_at)
+LINKEDIN_LI_AT_COOKIE="your_li_at_cookie_here"
+LINKEDIN_HEADLESS="true"
+
+# Fallback mode (simulated sandbox if credentials not yet entered)
+MCP_SIMULATION_FALLBACK="true"
+```
+
 
 ## 4. Quick Start & Operation
 

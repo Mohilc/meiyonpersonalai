@@ -187,12 +187,38 @@ def init_db():
             extracted_dates TEXT NOT NULL DEFAULT '[]',
             proposed_reply TEXT,
             status TEXT NOT NULL DEFAULT 'UNREAD',
+            external_id TEXT UNIQUE,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS linkedin_interactions (
+            id TEXT PRIMARY KEY,
+            interaction_type TEXT NOT NULL,
+            sender_name TEXT,
+            sender_title TEXT,
+            company TEXT,
+            content TEXT NOT NULL,
+            profile_url TEXT,
+            external_id TEXT UNIQUE,
+            status TEXT NOT NULL DEFAULT 'PENDING',
             created_at TEXT NOT NULL
         );
         """)
 
+        # Migration: Add external_id to email_messages if upgrading existing db
+        try:
+            conn.execute("ALTER TABLE email_messages ADD COLUMN external_id TEXT;")
+        except Exception:
+            pass
+        try:
+            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_email_external_id ON email_messages(external_id);")
+        except Exception:
+            pass
+
+
         # Seed profile if empty
         cur = conn.execute("SELECT id FROM user_profile WHERE id = 1;")
+
         if not cur.fetchone():
             now_iso = datetime.now(timezone.utc).isoformat()
             conn.execute("""

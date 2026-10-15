@@ -61,3 +61,50 @@ def draft_connection_note(payload: ConnectionNoteRequest):
 @router.get("/reports/weekly", response_model=WeeklyReportResponse)
 def get_weekly_report():
     return communication_service.generate_weekly_report()
+
+# ==========================================
+# MCP (Model Context Protocol) Endpoints
+# ==========================================
+from app.models.communication import (
+    MCPEmailSyncRequest, MCPEmailSyncResponse,
+    MCPLinkedInSyncRequest, MCPLinkedInSyncResponse,
+    LinkedInInteractionItem, MCPStatusResponse
+)
+from app.services import mcp_service
+
+@router.get("/mcp/status", response_model=MCPStatusResponse)
+def get_mcp_status():
+    """Returns live connection health and mode for Gmail and LinkedIn MCP servers."""
+    return mcp_service.get_mcp_system_status()
+
+@router.post("/mcp/sync-emails", response_model=MCPEmailSyncResponse)
+def sync_emails_via_mcp(payload: MCPEmailSyncRequest = MCPEmailSyncRequest()):
+    """
+    Syncs unread emails from Gmail MCP server, triaging for prompt injection,
+    phishing indicators, recruiter intent, and proposed replies.
+    """
+    return mcp_service.sync_unread_emails_via_mcp(limit=payload.limit, query=payload.query)
+
+@router.post("/mcp/sync-linkedin", response_model=MCPLinkedInSyncResponse)
+def sync_linkedin_via_mcp(payload: MCPLinkedInSyncRequest = MCPLinkedInSyncRequest()):
+    """
+    Syncs recent LinkedIn recruiter messages and connection requests via LinkedIn MCP server.
+    """
+    return mcp_service.sync_linkedin_activity_via_mcp(limit=payload.limit)
+
+@router.get("/linkedin/interactions", response_model=List[LinkedInInteractionItem])
+def list_linkedin_interactions(limit: int = Query(50)):
+    """Lists synced LinkedIn messages and connection requests."""
+    return mcp_service.list_linkedin_interactions(limit=limit)
+
+@router.post("/mcp/execute-approved/{approval_id}")
+def execute_approved_mcp_action(approval_id: str):
+    """
+    Executes a queued external communication (Email or LinkedIn action)
+    after verifying explicit human approval in the security gate.
+    """
+    try:
+        return mcp_service.execute_approved_mcp_action(approval_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

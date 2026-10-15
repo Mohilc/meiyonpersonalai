@@ -21,6 +21,7 @@ class EmailMessageCreate(BaseModel):
     subject: str
     body: str
     received_at: Optional[str] = None
+    external_id: Optional[str] = None
 
 class EmailMessageResponse(BaseModel):
     id: str
@@ -36,7 +37,9 @@ class EmailMessageResponse(BaseModel):
     extracted_dates: List[Dict[str, Any]] = []
     proposed_reply: Optional[str] = None
     status: str
+    external_id: Optional[str] = None
     created_at: str
+
 
 class EmailReplyRequest(BaseModel):
     custom_notes: Optional[str] = None
@@ -70,3 +73,42 @@ class WeeklyReportResponse(BaseModel):
     skills_practiced: List[str]
     executive_reflection: str
     recommended_priorities_next_week: List[str]
+
+# MCP (Model Context Protocol) Schemas
+class MCPEmailSyncRequest(BaseModel):
+    limit: int = Field(default=10, ge=1, le=50)
+    query: str = ""
+
+class MCPEmailSyncResponse(BaseModel):
+    synced_count: int
+    new_emails: List[EmailMessageResponse] = []
+    status: str
+    message: str
+
+class MCPLinkedInSyncRequest(BaseModel):
+    limit: int = Field(default=10, ge=1, le=50)
+
+class LinkedInInteractionItem(BaseModel):
+    id: str
+    interaction_type: str  # MESSAGE, CONNECTION_REQUEST, POST, INVITE
+    sender_name: Optional[str] = None
+    sender_title: Optional[str] = None
+    company: Optional[str] = None
+    content: str
+    profile_url: Optional[str] = None
+    external_id: Optional[str] = None
+    status: str = "PENDING"
+    created_at: str
+
+class MCPLinkedInSyncResponse(BaseModel):
+    synced_messages_count: int
+    pending_connections_count: int
+    interactions: List[LinkedInInteractionItem] = []
+    status: str
+    message: str
+
+class MCPStatusResponse(BaseModel):
+    gmail: Dict[str, Any]
+    linkedin: Dict[str, Any]
+    is_ready: bool
+
