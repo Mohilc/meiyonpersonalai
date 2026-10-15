@@ -106,29 +106,46 @@ def triage_incoming_email(data: EmailMessageCreate) -> EmailMessageResponse:
     profile = get_profile()
     if phishing_risk == PhishingRiskEnum.HIGH:
         proposed_reply = "[SECURITY ALERT] Do not reply. Message flagged for high phishing/scam indicators."
-    elif intent == EmailIntentEnum.INTERVIEW:
-        proposed_reply = (
-            f"Dear Hiring Team,\n\n"
-            f"Thank you for contacting me. I am very interested in this opportunity and would be glad to participate in the interview. "
-            f"Please let me know the available time slots and meeting link.\n\n"
-            f"Best regards,\n{profile.full_name}\nB.Tech Computer Science (AI)"
-        )
-    elif intent == EmailIntentEnum.INFO_REQUEST:
-        proposed_reply = (
-            f"Dear Hiring Team,\n\n"
-            f"Thank you for your message. Please find my updated project portfolio and resume information. "
-            f"I look forward to next steps.\n\n"
-            f"Best regards,\n{profile.full_name}"
-        )
-    elif intent == EmailIntentEnum.REJECTION:
-        proposed_reply = (
-            f"Dear Hiring Team,\n\n"
-            f"Thank you for considering my application and letting me know. I appreciate your team's time and wish you all the best. "
-            f"I hope to stay connected for future opportunities.\n\n"
-            f"Best regards,\n{profile.full_name}"
-        )
     else:
-        proposed_reply = f"Thank you for reaching out. I have received your message and will review it shortly.\n\nBest regards,\n{profile.full_name}"
+        ai_reply = None
+        if settings.AI_PROVIDER != "local_heuristic" and is_recruiter and intent in (EmailIntentEnum.INTERVIEW, EmailIntentEnum.INFO_REQUEST):
+            try:
+                from app.services import llm_service
+                ai_reply = llm_service.draft_recruiter_reply_with_ai(
+                    sender=data.sender,
+                    subject=data.subject,
+                    body=safe_body,
+                    detected_intent=intent.value,
+                    candidate_name=profile.full_name
+                )
+            except Exception:
+                ai_reply = None
+
+        if ai_reply:
+            proposed_reply = ai_reply
+        elif intent == EmailIntentEnum.INTERVIEW:
+            proposed_reply = (
+                f"Dear Hiring Team,\n\n"
+                f"Thank you for contacting me. I am very interested in this opportunity and would be glad to participate in the interview. "
+                f"Please let me know the available time slots and meeting link.\n\n"
+                f"Best regards,\n{profile.full_name}\nB.Tech Computer Science (AI)"
+            )
+        elif intent == EmailIntentEnum.INFO_REQUEST:
+            proposed_reply = (
+                f"Dear Hiring Team,\n\n"
+                f"Thank you for your message. Please find my updated project portfolio and resume information. "
+                f"I look forward to next steps.\n\n"
+                f"Best regards,\n{profile.full_name}"
+            )
+        elif intent == EmailIntentEnum.REJECTION:
+            proposed_reply = (
+                f"Dear Hiring Team,\n\n"
+                f"Thank you for considering my application and letting me know. I appreciate your team's time and wish you all the best. "
+                f"I hope to stay connected for future opportunities.\n\n"
+                f"Best regards,\n{profile.full_name}"
+            )
+        else:
+            proposed_reply = f"Thank you for reaching out. I have received your message and will review it shortly.\n\nBest regards,\n{profile.full_name}"
 
     msg_id = str(uuid.uuid4())
     now_iso = datetime.now(timezone.utc).isoformat()

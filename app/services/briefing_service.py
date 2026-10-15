@@ -92,6 +92,22 @@ def generate_daily_briefing() -> DailyBriefing:
         
     exec_summary = " ".join(summary_parts)
     
+    # AI-Enhanced Strategic Synthesis using NVIDIA Nemotron
+    if settings.AI_PROVIDER != "local_heuristic":
+        try:
+            from app.services import llm_service
+            p_text = "\n".join([f"- {t.title} (Priority: {t.priority})" for t in top_three]) or "No urgent tasks."
+            ai_synthesis = llm_service.synthesize_executive_briefing_with_ai(
+                priorities_text=p_text,
+                unread_count=len(todays_tasks) + len(overdue),
+                pending_approvals=len(pending_approvals),
+                candidate_name=profile.full_name
+            )
+            if ai_synthesis:
+                exec_summary = f"{exec_summary} | Strategic AI Insight: {ai_synthesis}"
+        except Exception:
+            pass
+    
     # Recommendations
     recommendations = []
     if overdue:

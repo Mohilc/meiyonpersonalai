@@ -27,9 +27,22 @@ class Settings(BaseSettings):
     AUTONOMY_MODE: str = "ASSISTED"
     
     # AI Provider Defaults (pluggable)
-    AI_PROVIDER: str = "local_heuristic"  # Can be gemini, ollama, openai, etc.
+    AI_PROVIDER: str = "nvidia_nim"  # nvidia_nim, gemini, ollama, local_heuristic
     AI_API_KEY: str = ""
-    AI_MODEL: str = "default"
+    AI_MODEL: str = "meta/muse-glimmer-30b"
+    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+
+    # Multi-Model Pool
+    NVIDIA_REASONING_KEY: str = ""
+    NVIDIA_REASONING_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+
+    NVIDIA_GENERAL_KEY: str = ""
+    NVIDIA_GENERAL_MODEL: str = "meta/muse-glimmer-30b"
+
+    NVIDIA_VISION_KEY: str = ""
+    NVIDIA_VISION_MODEL: str = "google/diffusiongemma-26b-a4b-it"
+
+    GEMINI_API_KEY: str = ""
 
     # MCP (Model Context Protocol) Settings
     GMAIL_MCP_ENABLED: bool = True
