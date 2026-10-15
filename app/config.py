@@ -10,7 +10,7 @@ DATA_DIR.mkdir(exist_ok=True)
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     
-    APP_NAME: str = "Personal AI Manager"
+    APP_NAME: str = "Meiyon"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"

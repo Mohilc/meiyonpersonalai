@@ -44,7 +44,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
     # 2. Executive Commands Routing
     if cmd in ("/start", "help", "/help", "menu"):
         return (
-            f"👋 *Welcome, {profile.full_name}!* (Personal AI Manager)\n\n"
+            f"👋 *Welcome, {profile.full_name}!* I am *Meiyon*, your Personal AI Manager.\n\n"
             "Here are your quick executive commands:\n"
             "• `/briefing` - Today's top priorities & strategic AI advice\n"
             "• `/emails` - Check Gmail & unread recruiter triage\n"
@@ -127,7 +127,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
 
     # 3. Natural Language Reasoning with NVIDIA Nemotron
     system_prompt = (
-        f"You are the executive personal AI manager for {profile.full_name}, "
+        f"You are Meiyon, the executive personal AI manager for {profile.full_name}, "
         f"a B.Tech student in CSE (AI) at Mar Baselios Christian College '27. "
         "Keep mobile responses concise, highly executive, and direct. "
         "Maintain 100% factual accuracy."

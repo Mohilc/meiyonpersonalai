@@ -52,9 +52,9 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown(wait=False)
 
 app = FastAPI(
-    title=settings.APP_NAME,
+    title="Meiyon",
     version=settings.APP_VERSION,
-    description="Executive AI Personal Manager for Mohil - Career, Job Discovery, Schedule, & Memory",
+    description="Meiyon - Executive AI Personal Manager for Mohil - Career, Job Discovery, Schedule, & Memory",
     lifespan=lifespan
 )
 

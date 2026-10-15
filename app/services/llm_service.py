@@ -88,7 +88,7 @@ def draft_recruiter_reply_with_ai(
 ) -> Optional[str]:
     """Generates an intelligent recruiter reply using Meta Muse Glimmer."""
     system_prompt = (
-        "You are an executive AI assistant representing the candidate. "
+        f"You are Meiyon, an executive AI personal manager representing {candidate_name}. "
         "Draft a polite, professional, and succinct email response. "
         "Keep it under 4 sentences. Maintain 100% factual accuracy."
     )
@@ -117,7 +117,7 @@ def synthesize_executive_briefing_with_ai(
 ) -> Optional[str]:
     """Synthesizes high-level executive strategic guidance using Nemotron Reasoning."""
     system_prompt = (
-        "You are the executive strategic advisor for an AI systems engineer. "
+        f"You are Meiyon, the executive strategic advisor for {candidate_name}. "
         "Provide a crisp, 2-3 sentence strategic morning briefing. "
         "Focus on execution efficiency, deadline awareness, and high-impact commitments."
     )

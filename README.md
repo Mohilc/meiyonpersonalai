@@ -1,7 +1,7 @@
 <div align="center">
 
-# 🚀 Executive Personal AI Manager
-### Autonomous Career Intelligence, Job Scam Verification & Model Context Protocol (MCP) Assistant
+# 🚀 Meiyon - Executive Personal AI Manager
+### Autonomous Career Intelligence, Multi-Model Reasoning & Model Context Protocol (MCP) Assistant
 
 ![Architecture & Integrations Hero](assets/architecture_hero.png)
 
