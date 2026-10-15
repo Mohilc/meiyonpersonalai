@@ -149,7 +149,7 @@ def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, A
         email_ids.reverse()
         
         for e_id in email_ids:
-            res_status, data = mail.fetch(e_id, "(RFC822)")
+            res_status, data = mail.fetch(e_id, "(BODY.PEEK[])")
             if res_status != "OK" or not data:
                 continue
             for part in data:
@@ -232,7 +232,64 @@ def list_unread_emails(max_results: int = 10, query: str = "") -> str:
 def read_email(message_id: str) -> str:
     """
     Retrieves the complete content of an email message by its identifier.
+    Supports both live IMAP messages (prefixed with imap_) and sandbox messages.
     """
+    if message_id.startswith("imap_") and GMAIL_ADDRESS and GMAIL_APP_PASSWORD:
+        e_id = message_id.replace("imap_", "")
+        clean_password = GMAIL_APP_PASSWORD.replace(" ", "")
+        try:
+            mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+            mail.login(GMAIL_ADDRESS, clean_password)
+            mail.select("INBOX")
+            res_status, data = mail.fetch(e_id.encode(), "(BODY.PEEK[])")
+            if res_status == "OK" and data:
+                for part in data:
+                    if isinstance(part, tuple):
+                        raw_email = part[1]
+                        msg = email.message_from_bytes(raw_email)
+                        subject = _decode_mime_header(msg.get("Subject", "(No Subject)"))
+                        sender = _decode_mime_header(msg.get("From", "unknown"))
+                        date_str = msg.get("Date", "")
+                        body = ""
+                        if msg.is_multipart():
+                            for subpart in msg.walk():
+                                c_type = subpart.get_content_type()
+                                c_disp = str(subpart.get("Content-Disposition"))
+                                if c_type == "text/plain" and "attachment" not in c_disp:
+                                    payload = subpart.get_payload(decode=True)
+                                    if payload:
+                                        body = payload.decode(subpart.get_content_charset() or "utf-8", errors="replace")
+                                        break
+                        else:
+                            payload = msg.get_payload(decode=True)
+                            if payload:
+                                body = payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
+                        try:
+                            mail.close()
+                            mail.logout()
+                        except Exception:
+                            pass
+                        return json.dumps({
+                            "status": "SUCCESS",
+                            "email": {
+                                "id": message_id,
+                                "thread_id": f"thread_{e_id}",
+                                "sender": sender,
+                                "recipient": GMAIL_ADDRESS,
+                                "subject": subject,
+                                "date": date_str or datetime.now(timezone.utc).isoformat(),
+                                "snippet": body[:120].strip() if body else "(No content)",
+                                "body": body.strip() or "(No readable text content)"
+                            }
+                        })
+            try:
+                mail.close()
+                mail.logout()
+            except Exception:
+                pass
+        except Exception:
+            pass
+
     for msg in SANDBOX_EMAILS:
         if msg["id"] == message_id:
             return json.dumps({"status": "SUCCESS", "email": msg})
