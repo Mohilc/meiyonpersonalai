@@ -24,6 +24,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+
+# Load local environment configuration (.env)
+load_dotenv()
 
 from mcp.server.mcpserver import MCPServer
 
@@ -33,6 +37,7 @@ server = MCPServer("gmail-mcp")
 # Configuration from environment or defaults
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "").strip()
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").strip()
+
 GMAIL_CREDENTIALS_PATH = os.getenv("GMAIL_CREDENTIALS_PATH", "").strip()
 MCP_SIMULATION_FALLBACK = os.getenv("MCP_SIMULATION_FALLBACK", "true").lower() in ("true", "1", "yes")
 

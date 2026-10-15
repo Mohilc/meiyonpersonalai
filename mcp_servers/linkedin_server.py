@@ -17,6 +17,10 @@ import json
 import uuid
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+
+# Load local environment configuration (.env)
+load_dotenv()
 
 from mcp.server.mcpserver import MCPServer
 
@@ -25,6 +29,7 @@ server = MCPServer("linkedin-mcp")
 
 # Configuration from environment or defaults
 LINKEDIN_LI_AT_COOKIE = os.getenv("LINKEDIN_LI_AT_COOKIE", "").strip()
+
 LINKEDIN_HEADLESS = os.getenv("LINKEDIN_HEADLESS", "true").lower() in ("true", "1", "yes")
 MCP_SIMULATION_FALLBACK = os.getenv("MCP_SIMULATION_FALLBACK", "true").lower() in ("true", "1", "yes")
 
