@@ -72,15 +72,27 @@ def generate_completion(
         logger.warning("NVIDIA NIM API key not configured for task_type: %s", task_type)
         return generate_contextual_fallback(prompt)
 
-    # Multi-model resilience order: start with fast responsive model
+    # Multi-model resilience order: start with fast, ultra-responsive models
     candidate_models: List[str] = []
     if task_type == "general":
-        primary = settings.NVIDIA_GENERAL_MODEL or "meta/llama-3.2-11b-vision-instruct"
-        candidate_models = [primary, "meta/llama-3.2-11b-vision-instruct"]
+        primary = settings.NVIDIA_GENERAL_MODEL or "google/diffusiongemma-26b-a4b-it"
+        candidate_models = [
+            primary,
+            "google/diffusiongemma-26b-a4b-it",
+            "nvidia/nemotron-3-super-120b-a12b",
+            "stepfun-ai/step-5-preview"
+        ]
     elif task_type == "vision":
-        candidate_models = [settings.NVIDIA_VISION_MODEL, "meta/llama-3.2-11b-vision-instruct"]
+        candidate_models = [
+            settings.NVIDIA_VISION_MODEL,
+            "google/diffusiongemma-26b-a4b-it"
+        ]
     else:  # reasoning
-        candidate_models = [settings.NVIDIA_REASONING_MODEL, "meta/llama-3.2-11b-vision-instruct"]
+        candidate_models = [
+            settings.NVIDIA_REASONING_MODEL or "nvidia/nemotron-3-super-120b-a12b",
+            "nvidia/nemotron-3-super-120b-a12b",
+            "google/diffusiongemma-26b-a4b-it"
+        ]
 
     # Deduplicate while preserving order
     seen = set()
@@ -109,23 +121,24 @@ def generate_completion(
             "temperature": temperature
         }
         try:
-            with httpx.Client(timeout=18.0) as client:
+            with httpx.Client(timeout=6.0) as client:
                 resp = client.post(url, headers=headers, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
-                    choice = data.get("choices", [{}])[0]
-                    message = choice.get("message", {})
-                    content = message.get("content")
-                    
-                    # Fallback for reasoning models where answer may be within reasoning_content
-                    if not content and message.get("reasoning_content"):
-                        reasoning = message.get("reasoning_content")
-                        lines = [l.strip() for l in reasoning.splitlines() if l.strip()]
-                        if lines:
-                            content = lines[-1]
-                            
-                    if content and content.strip():
-                        return content.strip()
+                    choices = data.get("choices", [])
+                    if choices:
+                        message = choices[0].get("message", {})
+                        content = message.get("content")
+                        
+                        # Fallback for reasoning models where answer may be within reasoning_content
+                        if not content and message.get("reasoning_content"):
+                            reasoning = message.get("reasoning_content", "").strip()
+                            lines = [l.strip() for l in reasoning.splitlines() if l.strip()]
+                            if lines:
+                                content = lines[-1]
+                                
+                        if content and content.strip():
+                            return content.strip()
                 else:
                     logger.warning("NVIDIA NIM model %s failed (%d): %s", model_name, resp.status_code, resp.text)
         except Exception as e:
@@ -194,3 +207,111 @@ def synthesize_executive_briefing_with_ai(
         max_tokens=1024,
         temperature=0.6
     )
+
+
+def extract_text_with_ocr(image_bytes: bytes, image_format: str = "png") -> Dict[str, Any]:
+    """
+    Performs end-to-end optical character recognition (OCR) using NVIDIA Nemotron OCR v2.
+    Extracts text blocks and full detected text from images (resumes, screenshots, documents).
+    """
+    import base64
+    key = settings.NVIDIA_OCR_KEY or settings.NVIDIA_GENERAL_KEY
+    if not key:
+        return {"status": "ERROR", "error": "NVIDIA_OCR_KEY is not configured."}
+
+    b64 = base64.b64encode(image_bytes).decode("utf-8")
+    mime = f"image/{image_format.lower().replace('jpg', 'jpeg')}"
+    data_url = f"data:{mime};base64,{b64}"
+
+    url = settings.NVIDIA_OCR_URL
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "input": [
+            {
+                "type": "image_url",
+                "url": data_url
+            }
+        ]
+    }
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                detections = []
+                extracted_lines = []
+                for item in data.get("data", []):
+                    for det in item.get("text_detections", []):
+                        text = det.get("text", "").strip()
+                        if text:
+                            extracted_lines.append(text)
+                            detections.append(det)
+                full_text = "\n".join(extracted_lines)
+                return {
+                    "status": "SUCCESS",
+                    "model": data.get("model", settings.NVIDIA_OCR_MODEL),
+                    "full_text": full_text,
+                    "detections_count": len(detections),
+                    "detections": detections
+                }
+            else:
+                logger.error("Nemotron OCR v2 failed (%d): %s", resp.status_code, resp.text)
+                return {
+                    "status": "ERROR",
+                    "status_code": resp.status_code,
+                    "error": resp.text
+                }
+    except Exception as e:
+        logger.error("Nemotron OCR v2 request exception: %s", str(e))
+        return {"status": "ERROR", "error": str(e)}
+
+
+def analyze_document_with_ocr(
+    image_bytes: bytes,
+    prompt: Optional[str] = None,
+    image_format: str = "png",
+    candidate_name: str = "Mohil"
+) -> Dict[str, Any]:
+    """
+    Combines high-speed Nemotron OCR v2 text recognition with DiffusionGemma AI synthesis
+    to read, analyze, and extract actionable insights from complex real-world document images.
+    """
+    ocr_result = extract_text_with_ocr(image_bytes=image_bytes, image_format=image_format)
+    if ocr_result.get("status") != "SUCCESS":
+        return ocr_result
+
+    extracted_text = ocr_result.get("full_text", "").strip()
+    if not extracted_text:
+        return {
+            "status": "SUCCESS",
+            "full_text": "",
+            "summary": "No text detected in image."
+        }
+
+    sys_prompt = (
+        f"You are Meiyon, the executive AI partner for {candidate_name}. "
+        "Analyze the following OCR-extracted text accurately and concisely. "
+        "Highlight key details, dates, action items, or critical takeaways."
+    )
+    user_prompt = prompt or f"Summarize and extract the main insights from this document:\n\n{extracted_text}"
+    
+    analysis = generate_completion(
+        prompt=user_prompt,
+        system_prompt=sys_prompt,
+        task_type="general",
+        max_tokens=512,
+        temperature=0.5
+    )
+
+    return {
+        "status": "SUCCESS",
+        "full_text": extracted_text,
+        "analysis": analysis,
+        "model": ocr_result.get("model")
+    }
+

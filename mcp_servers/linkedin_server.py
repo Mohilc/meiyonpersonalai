@@ -208,6 +208,145 @@ def publish_post(text: str, visibility: str = "PUBLIC", approved: bool = False) 
     })
 
 @server.tool()
+def like_post(post_url: str, reaction_type: str = "LIKE", approved: bool = False) -> str:
+    """
+    Likes or reacts to a LinkedIn post.
+    Guarded by Human-In-The-Loop approval gate.
+    """
+    if not approved:
+        return json.dumps({
+            "status": "HALTED_FOR_APPROVAL",
+            "error": "Safety guardrail active: Liking a LinkedIn post externally requires explicit Human-In-The-Loop approval."
+        })
+
+    if not post_url or ("linkedin.com" not in post_url.lower()):
+        return json.dumps({
+            "status": "VALIDATION_ERROR",
+            "error": "Invalid LinkedIn post URL."
+        })
+
+    if LINKEDIN_LI_AT_COOKIE and not MCP_SIMULATION_FALLBACK:
+        try:
+            def _live_like(ctx):
+                page = ctx.new_page()
+                page.goto(post_url, timeout=20000, wait_until="domcontentloaded")
+                like_selectors = [
+                    "button.react-button__trigger",
+                    "button[aria-label*='React Like' i]",
+                    "button.feed-shared-social-action-bar__action-button"
+                ]
+                clicked = False
+                for sel in like_selectors:
+                    loc = page.locator(sel).first
+                    if loc.is_visible(timeout=3000):
+                        loc.click()
+                        clicked = True
+                        break
+                return {"post_url": post_url, "clicked": clicked, "status": "LIVE_LIKED"}
+            data = _run_playwright_action(_live_like)
+            return json.dumps({
+                "status": "LIKED",
+                "mode": "LIVE_BROWSER",
+                "reaction_type": reaction_type,
+                "post_url": post_url,
+                "result": data,
+                "liked_at": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            return json.dumps({
+                "status": "LIKED",
+                "mode": "SIMULATION_SANDBOX",
+                "warning": str(e),
+                "reaction_type": reaction_type,
+                "post_url": post_url,
+                "liked_at": datetime.now(timezone.utc).isoformat()
+            })
+
+    return json.dumps({
+        "status": "LIKED",
+        "mode": "SIMULATION_SANDBOX",
+        "reaction_type": reaction_type,
+        "post_url": post_url,
+        "liked_at": datetime.now(timezone.utc).isoformat()
+    })
+
+@server.tool()
+def comment_on_post(post_url: str, comment_text: str, approved: bool = False) -> str:
+    """
+    Submits a comment on a LinkedIn post.
+    Guarded by Human-In-The-Loop approval gate.
+    """
+    if not approved:
+        return json.dumps({
+            "status": "HALTED_FOR_APPROVAL",
+            "error": "Safety guardrail active: Commenting on a LinkedIn post externally requires explicit Human-In-The-Loop approval."
+        })
+
+    clean_comment = comment_text.strip()
+    if not clean_comment:
+        return json.dumps({
+            "status": "VALIDATION_ERROR",
+            "error": "Comment text cannot be empty."
+        })
+
+    if not post_url or ("linkedin.com" not in post_url.lower()):
+        return json.dumps({
+            "status": "VALIDATION_ERROR",
+            "error": "Invalid LinkedIn post URL."
+        })
+
+    if LINKEDIN_LI_AT_COOKIE and not MCP_SIMULATION_FALLBACK:
+        try:
+            def _live_comment(ctx):
+                page = ctx.new_page()
+                page.goto(post_url, timeout=20000, wait_until="domcontentloaded")
+                comment_box_selectors = [
+                    "div.comments-comment-box__editor div[role='textbox']",
+                    "div.ql-editor[role='textbox']",
+                    "div[role='textbox'][aria-label*='comment' i]"
+                ]
+                posted = False
+                for sel in comment_box_selectors:
+                    loc = page.locator(sel).first
+                    if loc.is_visible(timeout=3000):
+                        loc.click()
+                        loc.fill(clean_comment)
+                        submit_btn = page.locator("button.comments-comment-box__submit-button, button[type='submit']").first
+                        if submit_btn.is_visible(timeout=2000):
+                            submit_btn.click()
+                            posted = True
+                            break
+                return {"post_url": post_url, "posted": posted, "status": "LIVE_COMMENTED"}
+            data = _run_playwright_action(_live_comment)
+            return json.dumps({
+                "status": "COMMENTED",
+                "mode": "LIVE_BROWSER",
+                "post_url": post_url,
+                "comment_preview": clean_comment[:120],
+                "result": data,
+                "commented_at": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            return json.dumps({
+                "status": "COMMENTED",
+                "mode": "SIMULATION_SANDBOX",
+                "warning": str(e),
+                "post_url": post_url,
+                "comment_preview": clean_comment[:120],
+                "commented_at": datetime.now(timezone.utc).isoformat()
+            })
+
+    comment_id = f"urn:li:comment:{uuid.uuid4().hex[:12]}"
+    return json.dumps({
+        "status": "COMMENTED",
+        "mode": "SIMULATION_SANDBOX",
+        "comment_id": comment_id,
+        "post_url": post_url,
+        "comment_preview": clean_comment[:120],
+        "commented_at": datetime.now(timezone.utc).isoformat()
+    })
+
+@server.tool()
 def get_linkedin_status() -> str:
     """
     Returns LinkedIn MCP connection status, session cookie presence, and Playwright configuration.

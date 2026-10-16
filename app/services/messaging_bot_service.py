@@ -77,8 +77,8 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             return "🔒 Unauthorized: This Personal AI Manager is strictly locked to its executive owner."
             
     if platform == "whatsapp" and settings.WHATSAPP_ALLOWED_NUMBER:
-        clean_sender = sender_id.replace("whatsapp:", "").strip()
-        clean_allowed = settings.WHATSAPP_ALLOWED_NUMBER.replace("whatsapp:", "").strip()
+        clean_sender = sender_id.replace("whatsapp:", "").strip().lstrip("+")
+        clean_allowed = settings.WHATSAPP_ALLOWED_NUMBER.replace("whatsapp:", "").strip().lstrip("+")
         if clean_sender != clean_allowed:
             return "🔒 Unauthorized: This Personal AI Manager is strictly locked to its executive owner."
 
@@ -92,12 +92,14 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/briefing` - Today's top priorities & strategic AI advice\n"
             "• `/emails` - Check Gmail & unread recruiter triage\n"
             "• `/linkedin` - Check LinkedIn messages & connection requests\n"
+            "• `like <post_url>` - React with Like to a LinkedIn post\n"
+            "• `comment <post_url>: <text>` - Comment on a LinkedIn post\n"
             "• `/approvals` - View staged actions awaiting your approval\n"
-            "• `/approve <id>` - Authorize staged email reply, post or invite\n"
+            "• `/approve <id>` - Authorize staged email, post, like, or comment\n"
             "• `/reject <id>` - Decline staged action\n"
             "• `/tasks` - View scheduled task commitments\n"
             "• `/clear` - Reset conversation memory buffer\n\n"
-            "💬 *Or just talk to me naturally!* Share your thoughts, ask for advice, discuss your drone projects, or send LinkedIn profile links."
+            "💬 *Or just talk to me naturally!* Share your thoughts, ask for advice, discuss your drone projects, or send LinkedIn post & profile links."
         )
 
     if cmd in ("/clear", "clear", "reset", "reset chat", "clear memory"):
@@ -235,15 +237,110 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             lines.append(f"• *{t.title}* [{t.priority.value}] {due}")
         return "\n".join(lines)
 
-    # 3. Agentic Intent: Detect LinkedIn Post URL
+    # 3. Agentic Intent: Detect LinkedIn Post URL & Handle Like / Comment Actions
     post_match = LINKEDIN_POST_PATTERN.search(clean_text)
     if post_match:
-        post_url = post_match.group(0)
+        matched_url = post_match.group(0)
+        clean_post_url = matched_url.split("?")[0].rstrip("/")
+        if not clean_post_url.startswith("http://") and not clean_post_url.startswith("https://"):
+            canonical_post_url = f"https://{clean_post_url}"
+        else:
+            canonical_post_url = clean_post_url
+
+        # A. Intent: Like LinkedIn Post
+        if any(k in cmd for k in ("like", "upvote", "react")) and not any(k in cmd for k in ("comment", "reply", "draft")):
+            appr = audit_service.create_approval_request(
+                title="Like LinkedIn Post",
+                description=f"Engage with post by reacting with Like: {canonical_post_url}",
+                action_payload={
+                    "action_type": "LINKEDIN_LIKE",
+                    "post_url": canonical_post_url,
+                    "reaction_type": "LIKE"
+                },
+                risk_level=RiskLevelEnum.LOW
+            )
+            return format_permission_request(
+                approval_id=appr.id,
+                action_type="LINKEDIN_LIKE",
+                title="Like LinkedIn Post",
+                description="React with Like on LinkedIn post.",
+                payload_preview=f"Target: {canonical_post_url}\nReaction: LIKE 👍",
+                risk_level="LOW",
+                platform=platform
+            )
+
+        # B. Intent: Comment on LinkedIn Post (with explicit comment text)
+        comment_match = re.search(r"(?:comment|saying|text|msg|reply)[:\s]+(.+)", clean_text, re.IGNORECASE)
+        if comment_match:
+            comment_body = comment_match.group(1).strip()
+            # Clean post URL from comment body if captured
+            comment_body = comment_body.replace(matched_url, "").strip().strip(":").strip()
+            if comment_body:
+                appr = audit_service.create_approval_request(
+                    title="Comment on LinkedIn Post",
+                    description=f"Publish personalized comment on: {canonical_post_url}",
+                    action_payload={
+                        "action_type": "LINKEDIN_COMMENT",
+                        "post_url": canonical_post_url,
+                        "comment_text": comment_body
+                    },
+                    risk_level=RiskLevelEnum.MEDIUM
+                )
+                return format_permission_request(
+                    approval_id=appr.id,
+                    action_type="LINKEDIN_COMMENT",
+                    title="Comment on LinkedIn Post",
+                    description="Publish authentic comment on LinkedIn post.",
+                    payload_preview=f"Target: {canonical_post_url}\nComment:\n\"{comment_body}\"",
+                    risk_level="MEDIUM",
+                    platform=platform
+                )
+
+        # C. Intent: AI Ghostwrite & Draft Comment
+        if any(k in cmd for k in ("draft", "generate", "write comment", "suggest comment")):
+            draft_prompt = (
+                f"You are Meiyon, the executive AI representative for {profile.full_name}, "
+                f"an AI & Computer Science student at Mar Baselios Christian College ('27) passionate about drone systems.\n"
+                f"Draft an insightful, authentic, 2-3 sentence LinkedIn comment celebrating this technical post ({canonical_post_url}). "
+                f"Highlight technical curiosity, real-time edge processing, or innovation."
+            )
+            drafted_comment = llm_service.generate_completion(
+                prompt=clean_text,
+                system_prompt=draft_prompt,
+                task_type="general",
+                max_tokens=150,
+                temperature=0.6
+            ) or (
+                "Impressive work! Real-time telemetry and edge system optimizations are crucial engineering frontiers. "
+                "Looking forward to seeing how this architecture evolves!"
+            )
+            appr = audit_service.create_approval_request(
+                title="Comment on LinkedIn Post (AI Draft)",
+                description=f"Publish AI-drafted comment on: {canonical_post_url}",
+                action_payload={
+                    "action_type": "LINKEDIN_COMMENT",
+                    "post_url": canonical_post_url,
+                    "comment_text": drafted_comment
+                },
+                risk_level=RiskLevelEnum.MEDIUM
+            )
+            return format_permission_request(
+                approval_id=appr.id,
+                action_type="LINKEDIN_COMMENT",
+                title="Comment on LinkedIn Post (AI Draft)",
+                description="AI-drafted insightful technical comment staged for your sign-off.",
+                payload_preview=f"Target: {canonical_post_url}\nDrafted Comment:\n\"{drafted_comment}\"",
+                risk_level="MEDIUM",
+                platform=platform
+            )
+
+        # Default Card: Provide quick action triggers
         return (
-            f"🔗 *LinkedIn Post Link Detected:*\n`{post_url}`\n\n"
-            f"I can draft an authentic, insightful response or comment for this post!\n"
-            f"💬 Reply with what you would like to say, for example:\n"
-            f"_\"Draft an encouraging comment highlighting drone telemetry advances\"_"
+            f"🔗 *LinkedIn Post Link Detected:*\n`{canonical_post_url}`\n\n"
+            f"👉 *Choose your action:*\n"
+            f"• *Like Post:* Reply `like {canonical_post_url}`\n"
+            f"• *Custom Comment:* Reply `comment {canonical_post_url}: <your comment>`\n"
+            f"• *AI Draft Comment:* Reply `draft comment {canonical_post_url}`"
         )
 
     # 4. Agentic Intent: Detect Any LinkedIn Profile URL -> View Profile or Proactively Stage Connection Invite

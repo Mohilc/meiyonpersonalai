@@ -197,3 +197,59 @@ def test_mcp_execute_approved_action_gate():
     exec_data = res_approved.json()
     assert exec_data["status"] == "EXECUTED"
     assert exec_data["mcp_result"]["status"] in ("SENT", "SENT_SIMULATED")
+
+
+def test_linkedin_like_and_comment_tools_and_execution():
+    """Verifies LinkedIn like_post, comment_on_post tools and approved execution gate."""
+    post_url = "https://www.linkedin.com/posts/mohil-autonomous-drone-telemetry-update"
+
+    # 1. Direct tool: unapproved like must halt
+    unapproved_like = json.loads(linkedin_server.like_post(post_url=post_url, approved=False))
+    assert unapproved_like["status"] == "HALTED_FOR_APPROVAL"
+
+    # 2. Direct tool: approved like executes
+    approved_like = json.loads(linkedin_server.like_post(post_url=post_url, approved=True))
+    assert approved_like["status"] == "LIKED"
+    assert approved_like["post_url"] == post_url
+
+    # 3. Direct tool: unapproved comment must halt
+    unapproved_comm = json.loads(linkedin_server.comment_on_post(post_url=post_url, comment_text="Great work!", approved=False))
+    assert unapproved_comm["status"] == "HALTED_FOR_APPROVAL"
+
+    # 4. Direct tool: approved comment executes
+    approved_comm = json.loads(linkedin_server.comment_on_post(post_url=post_url, comment_text="Great work on telemetry!", approved=True))
+    assert approved_comm["status"] == "COMMENTED"
+    assert approved_comm["comment_preview"] == "Great work on telemetry!"
+
+    # 5. Service-level approved execution for LINKEDIN_LIKE
+    like_appr = audit_service.create_approval_request(
+        title="Like LinkedIn Post",
+        description="Authorization required to like post",
+        action_payload={
+            "action_type": "LINKEDIN_LIKE",
+            "post_url": post_url,
+            "reaction_type": "LIKE"
+        },
+        risk_level=RiskLevelEnum.LOW
+    )
+    audit_service.decide_approval(like_appr.id, ApprovalDecision(decision=ApprovalStatusEnum.APPROVED, reason="Approved by user"))
+    like_res = mcp_service.execute_approved_mcp_action(like_appr.id)
+    assert like_res["status"] == "EXECUTED"
+    assert like_res["mcp_result"]["status"] == "LIKED"
+
+    # 6. Service-level approved execution for LINKEDIN_COMMENT
+    comm_appr = audit_service.create_approval_request(
+        title="Comment on LinkedIn Post",
+        description="Authorization required to comment on post",
+        action_payload={
+            "action_type": "LINKEDIN_COMMENT",
+            "post_url": post_url,
+            "comment_text": "Groundbreaking engineering for edge robotics!"
+        },
+        risk_level=RiskLevelEnum.MEDIUM
+    )
+    audit_service.decide_approval(comm_appr.id, ApprovalDecision(decision=ApprovalStatusEnum.APPROVED, reason="Approved by user"))
+    comm_res = mcp_service.execute_approved_mcp_action(comm_appr.id)
+    assert comm_res["status"] == "EXECUTED"
+    assert comm_res["mcp_result"]["status"] == "COMMENTED"
+

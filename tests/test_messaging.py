@@ -144,3 +144,52 @@ def test_linkedin_diagnostics_and_features():
     )
     assert "LinkedIn Profile Summary" in res_view
 
+
+def test_linkedin_post_like_and_comment_chat_flows():
+    """Verifies that liking and commenting on a LinkedIn post creates HITL approvals and can be executed."""
+    import re
+    post_url = "https://www.linkedin.com/posts/mohil-ai-research-lab-update"
+
+    # 1. Like LinkedIn Post
+    res_like = messaging_bot_service.handle_incoming_text(
+        "any", "telegram",
+        f"like {post_url}"
+    )
+    assert "SECURITY GATE" in res_like
+    assert "LINKEDIN_LIKE" in res_like
+    assert post_url in res_like
+
+    like_match = re.search(r"/approve ([a-f0-9]{8})", res_like)
+    assert like_match is not None
+    like_id = like_match.group(1)
+    res_approve_like = messaging_bot_service.handle_incoming_text("any", "telegram", f"/approve {like_id}")
+    assert "ACTION EXECUTED SUCCESSFULLY" in res_approve_like
+
+    # 2. Comment on LinkedIn Post
+    res_comm = messaging_bot_service.handle_incoming_text(
+        "any", "telegram",
+        f"comment on {post_url}: Outstanding telemetry breakthroughs!"
+    )
+    assert "SECURITY GATE" in res_comm
+    assert "LINKEDIN_COMMENT" in res_comm
+    assert "Outstanding telemetry breakthroughs!" in res_comm
+
+    comm_match = re.search(r"/approve ([a-f0-9]{8})", res_comm)
+    assert comm_match is not None
+    comm_id = comm_match.group(1)
+    res_approve_comm = messaging_bot_service.handle_incoming_text("any", "telegram", f"/approve {comm_id}")
+    assert "ACTION EXECUTED SUCCESSFULLY" in res_approve_comm
+
+
+def test_whatsapp_simulation_endpoint():
+    """Verifies that the /api/webhooks/whatsapp/simulate endpoint returns instant WhatsApp responses."""
+    resp = client.post(
+        "/api/webhooks/whatsapp/simulate",
+        json={"from_number": "+918590144798", "message": "/briefing"}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "DAILY EXECUTIVE BRIEFING" in data["reply"]
+    assert data["sender"] == "+918590144798"
+
+

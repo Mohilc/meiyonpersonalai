@@ -108,3 +108,28 @@ def execute_approved_mcp_action(approval_id: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+from fastapi import File, UploadFile
+from app.services import llm_service
+
+@router.post("/ocr/extract")
+async def extract_text_ocr(file: UploadFile = File(...)):
+    """Extracts text from uploaded image using NVIDIA Nemotron OCR v2."""
+    contents = await file.read()
+    fmt = file.filename.split(".")[-1] if file.filename and "." in file.filename else "png"
+    result = llm_service.extract_text_with_ocr(image_bytes=contents, image_format=fmt)
+    return result
+
+
+@router.post("/ocr/analyze")
+async def analyze_document_ocr(
+    file: UploadFile = File(...),
+    prompt: Optional[str] = Query(None)
+):
+    """Performs OCR and executive AI synthesis on uploaded document or screenshot."""
+    contents = await file.read()
+    fmt = file.filename.split(".")[-1] if file.filename and "." in file.filename else "png"
+    result = llm_service.analyze_document_with_ocr(image_bytes=contents, prompt=prompt, image_format=fmt)
+    return result
+
+

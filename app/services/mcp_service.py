@@ -274,6 +274,16 @@ def execute_approved_mcp_action(approval_id: str) -> Dict[str, Any]:
         note = payload.get("note", "")
         invite_res = linkedin_server.send_connection_invite(profile_url=profile_url, custom_note=note, approved=True)
         result = json.loads(invite_res)
+    elif action_type == "LINKEDIN_LIKE":
+        post_url = payload.get("post_url", "")
+        reaction_type = payload.get("reaction_type", "LIKE")
+        like_res = linkedin_server.like_post(post_url=post_url, reaction_type=reaction_type, approved=True)
+        result = json.loads(like_res)
+    elif action_type == "LINKEDIN_COMMENT":
+        post_url = payload.get("post_url", "")
+        comment_text = payload.get("comment_text", "")
+        comment_res = linkedin_server.comment_on_post(post_url=post_url, comment_text=comment_text, approved=True)
+        result = json.loads(comment_res)
     else:
         raise ValueError(f"Unsupported action payload type: '{action_type}'")
 

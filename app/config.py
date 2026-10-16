@@ -29,18 +29,23 @@ class Settings(BaseSettings):
     # AI Provider Defaults (pluggable)
     AI_PROVIDER: str = "nvidia_nim"  # nvidia_nim, gemini, ollama, local_heuristic
     AI_API_KEY: str = ""
-    AI_MODEL: str = "meta/muse-glimmer-30b"
+    AI_MODEL: str = "google/diffusiongemma-26b-a4b-it"
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
     # Multi-Model Pool
     NVIDIA_REASONING_KEY: str = ""
-    NVIDIA_REASONING_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+    NVIDIA_REASONING_MODEL: str = "nvidia/nemotron-3-super-120b-a12b"
 
     NVIDIA_GENERAL_KEY: str = ""
-    NVIDIA_GENERAL_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
+    NVIDIA_GENERAL_MODEL: str = "google/diffusiongemma-26b-a4b-it"
 
     NVIDIA_VISION_KEY: str = ""
     NVIDIA_VISION_MODEL: str = "google/diffusiongemma-26b-a4b-it"
+
+    # OCR & Multilingual Text Recognition
+    NVIDIA_OCR_KEY: str = ""
+    NVIDIA_OCR_MODEL: str = "nvidia/nemotron-ocr-v2"
+    NVIDIA_OCR_URL: str = "https://ai.api.nvidia.com/v1/cv/nvidia/nemotron-ocr-v2"
 
     GEMINI_API_KEY: str = ""
 

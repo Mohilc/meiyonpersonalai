@@ -77,3 +77,35 @@ async def trigger_whatsapp_template(
         content_sid=content_sid
     )
     return result
+
+
+@router.post("/whatsapp/send-message")
+async def trigger_whatsapp_message(
+    to_number: str = "whatsapp:+918590144798",
+    text: str = Form(...)
+):
+    """Dispatches a direct text message via WhatsApp using Twilio API."""
+    success = messaging_bot_service.send_whatsapp_message(to_number=to_number, text=text)
+    return {
+        "success": success,
+        "to": to_number,
+        "text": text
+    }
+
+
+@router.post("/whatsapp/simulate")
+async def simulate_whatsapp_chat(request: Request):
+    """
+    Simulates receiving an incoming WhatsApp message for rapid testing and diagnostics.
+    Accepts JSON payload: {"from_number": "+918590144798", "message": "Hi Meiyon"}
+    """
+    data = await request.json()
+    sender = data.get("from_number") or settings.WHATSAPP_ALLOWED_NUMBER or "+918590144798"
+    incoming_text = data.get("message") or data.get("text") or ""
+    
+    reply = messaging_bot_service.handle_incoming_text(sender_id=sender, platform="whatsapp", text=incoming_text)
+    return {
+        "sender": sender,
+        "incoming_message": incoming_text,
+        "reply": reply
+    }
