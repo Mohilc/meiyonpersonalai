@@ -289,3 +289,6 @@ def execute_approved_mcp_action(approval_id: str) -> Dict[str, Any]:
         "approval_id": approval_id,
         "mcp_result": result
     }
+
+# Backward and cross-module compatibility alias
+execute_approved_action = execute_approved_mcp_action

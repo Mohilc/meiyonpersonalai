@@ -63,8 +63,9 @@ class Settings(BaseSettings):
     WHATSAPP_ENABLED: bool = True
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
-    TWILIO_WHATSAPP_NUMBER: str = "whatsapp:+14155238886"  # Default Twilio Sandbox
-    WHATSAPP_ALLOWED_NUMBER: str = ""  # Restrict to user's phone number
+    TWILIO_WHATSAPP_NUMBER: str = "whatsapp:+17372508034"
+    TWILIO_CONTENT_SID: str = "HXfe5ab5f00277942d4d4200328b4d403c"
+    WHATSAPP_ALLOWED_NUMBER: str = "+918590144798"  # Restrict to Mohil's WhatsApp number
 
 settings = Settings()
 settings.BACKUP_DIR.mkdir(parents=True, exist_ok=True)

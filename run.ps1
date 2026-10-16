@@ -8,7 +8,7 @@ $VENV_PYTHON = ".venv\Scripts\python.exe"
 if (-not (Test-Path $VENV_PYTHON)) {
     Write-Host "[!] Virtual environment not detected. Creating with uv..." -ForegroundColor Yellow
     uv venv .venv --python C:\Users\MOHIL\.local\bin\python3.11.exe
-    uv pip install fastapi uvicorn pydantic pydantic-settings apscheduler pytest httpx python-multipart
+    uv pip install fastapi uvicorn pydantic pydantic-settings apscheduler pytest httpx python-multipart twilio
 }
 
 Write-Host "[+] Starting Meiyon on http://127.0.0.1:8000 ..." -ForegroundColor Green

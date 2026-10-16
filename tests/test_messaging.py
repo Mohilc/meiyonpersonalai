@@ -70,9 +70,11 @@ def test_messaging_commands():
 
 def test_whatsapp_twilio_webhook_endpoint():
     """Tests incoming Twilio WhatsApp webhook and TwiML XML formatting."""
+    sender_number = settings.WHATSAPP_ALLOWED_NUMBER or "+919876543210"
+    clean_sender = sender_number if sender_number.startswith("whatsapp:") else f"whatsapp:{sender_number}"
     resp = client.post(
         "/api/webhooks/whatsapp",
-        data={"From": "whatsapp:+919876543210", "Body": "/start"}
+        data={"From": clean_sender, "Body": "/start"}
     )
     assert resp.status_code == 200
     assert "text/xml" in resp.headers["content-type"]

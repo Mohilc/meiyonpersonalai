@@ -56,11 +56,24 @@ async def whatsapp_twilio_webhook(
 
     reply_text = messaging_bot_service.handle_incoming_text(sender_id=sender, platform="whatsapp", text=incoming_text)
     
-    # Return TwiML response
+    # Return TwiML response (using CDATA to safeguard special characters)
     twiml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<Response>\n'
-        f'    <Message>{reply_text}</Message>\n'
+        f'    <Message><![CDATA[{reply_text}]]></Message>\n'
         '</Response>'
     )
     return Response(content=twiml, media_type="text/xml")
+
+
+@router.post("/whatsapp/send-template")
+async def trigger_whatsapp_template(
+    to_number: str = "whatsapp:+918590144798",
+    content_sid: Optional[str] = None
+):
+    """Triggers outbound WhatsApp template message using Twilio Content Template SID."""
+    result = messaging_bot_service.dispatch_whatsapp_with_sid(
+        to_number=to_number,
+        content_sid=content_sid
+    )
+    return result
