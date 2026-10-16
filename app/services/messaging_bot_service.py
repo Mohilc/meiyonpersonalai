@@ -31,6 +31,27 @@ logger = logging.getLogger(__name__)
 # Track Telegram message offset to avoid duplicate processing
 _LAST_TELEGRAM_OFFSET = 0
 
+# Multi-turn in-memory conversational history buffer (sender_id -> [{"role": "user"|"assistant", "content": text}])
+_CONVERSATION_HISTORY: Dict[str, List[Dict[str, str]]] = {}
+
+def get_conversation_history(sender_id: str) -> List[Dict[str, str]]:
+    """Retrieves recent multi-turn conversational history for a sender."""
+    return _CONVERSATION_HISTORY.get(str(sender_id), [])
+
+def clear_conversation_history(sender_id: str) -> None:
+    """Clears multi-turn conversational history for a sender."""
+    _CONVERSATION_HISTORY[str(sender_id)] = []
+
+def add_conversation_turn(sender_id: str, user_text: str, assistant_text: str) -> None:
+    """Appends user input and assistant response to conversation history, capped at 10 turns."""
+    sid = str(sender_id)
+    if sid not in _CONVERSATION_HISTORY:
+        _CONVERSATION_HISTORY[sid] = []
+    _CONVERSATION_HISTORY[sid].append({"role": "user", "content": user_text})
+    _CONVERSATION_HISTORY[sid].append({"role": "assistant", "content": assistant_text})
+    if len(_CONVERSATION_HISTORY[sid]) > 10:
+        _CONVERSATION_HISTORY[sid] = _CONVERSATION_HISTORY[sid][-10:]
+
 # Comprehensive LinkedIn URL patterns supporting international subdomains (in.linkedin.com, etc.),
 # missing schemes (linkedin.com/in/...), and tracking query parameters (?utm_source=...)
 LINKEDIN_PROFILE_PATTERN = re.compile(
@@ -66,16 +87,24 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
     # 2. Executive Commands Routing
     if cmd in ("/start", "help", "/help", "menu"):
         return (
-            f"👋 *Welcome, {profile.full_name}!* I am *Meiyon*, your Personal AI Manager.\n\n"
-            "Here are your quick executive commands:\n"
+            f"👋 *Welcome, {profile.full_name}!* I am *Meiyon*, your Executive Personal AI Manager & Partner.\n\n"
+            "I'm here for two-way conversation, career strategy, drone robotics ideas, and autonomous task management:\n"
             "• `/briefing` - Today's top priorities & strategic AI advice\n"
             "• `/emails` - Check Gmail & unread recruiter triage\n"
             "• `/linkedin` - Check LinkedIn messages & connection requests\n"
             "• `/approvals` - View staged actions awaiting your approval\n"
             "• `/approve <id>` - Authorize staged email reply, post or invite\n"
             "• `/reject <id>` - Decline staged action\n"
-            "• `/tasks` - View scheduled task commitments\n\n"
-            "💬 *Or just talk naturally!* Send a LinkedIn profile link to stage a connection invite, ask me to draft emails, or plan your schedule."
+            "• `/tasks` - View scheduled task commitments\n"
+            "• `/clear` - Reset conversation memory buffer\n\n"
+            "💬 *Or just talk to me naturally!* Share your thoughts, ask for advice, discuss your drone projects, or send LinkedIn profile links."
+        )
+
+    if cmd in ("/clear", "clear", "reset", "reset chat", "clear memory"):
+        clear_conversation_history(sender_id)
+        return (
+            f"🧹 *Chat Memory Cleared!*\n"
+            f"Starting a fresh conversational slate. What would you like to explore next, {profile.full_name}?"
         )
 
     if cmd in ("/briefing", "briefing", "today", "schedule"):
@@ -319,19 +348,26 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
                 platform=platform
             )
 
-    # 4. Natural Language Reasoning with NVIDIA Nemotron & Centralized Prompts
+    # 5. Natural Language Reasoning & Two-Way Conversational Dialogue
     system_prompt = build_executive_system_prompt(
         platform=platform,
         user_profile=profile,
         autonomy_mode=settings.AUTONOMY_MODE
     )
+    history = get_conversation_history(sender_id)
     ai_response = llm_service.generate_completion(
         prompt=clean_text,
         system_prompt=system_prompt,
-        task_type="reasoning",
-        max_tokens=512
+        conversation_history=history,
+        task_type="general",
+        max_tokens=400,
+        temperature=0.7
     )
-    return ai_response or "I received your request. You can check `/briefing`, `/emails`, or `/tasks` anytime."
+    final_reply = ai_response or llm_service.generate_contextual_fallback(clean_text, candidate_name=profile.full_name)
+    
+    # Store user message and assistant reply in conversational memory buffer
+    add_conversation_turn(sender_id, clean_text, final_reply)
+    return final_reply
 
 
 def send_telegram_message(chat_id: str, text: str) -> bool:

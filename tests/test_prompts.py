@@ -224,3 +224,40 @@ def test_end_to_end_messaging_bot_rejection():
     # Verify status in database
     updated = audit_service.get_approval(appr.id)
     assert updated.status == ApprovalStatusEnum.REJECTED
+
+def test_two_way_conversational_dialogue_and_memory():
+    """Verifies that the chatbot maintains two-way conversational history and responds contextually."""
+    sender_id = "test_conversation_user_99"
+    messaging_bot_service.clear_conversation_history(sender_id)
+    assert len(messaging_bot_service.get_conversation_history(sender_id)) == 0
+
+    # Turn 1: Casual conversation
+    reply1 = messaging_bot_service.handle_incoming_text(
+        sender_id=sender_id,
+        platform="telegram",
+        text="Hey Meiyon, I am working on my autonomous drone vision project today."
+    )
+    assert len(reply1) > 0
+    history1 = messaging_bot_service.get_conversation_history(sender_id)
+    assert len(history1) == 2  # 1 user + 1 assistant
+    assert history1[0]["role"] == "user"
+    assert "autonomous drone vision" in history1[0]["content"]
+
+    # Turn 2: Follow-up question using previous turn context
+    reply2 = messaging_bot_service.handle_incoming_text(
+        sender_id=sender_id,
+        platform="telegram",
+        text="What are some good ways to benchmark latency on a Raspberry Pi?"
+    )
+    assert len(reply2) > 0
+    history2 = messaging_bot_service.get_conversation_history(sender_id)
+    assert len(history2) == 4  # 2 user + 2 assistant
+
+    # Clear memory test
+    res_clear = messaging_bot_service.handle_incoming_text(
+        sender_id=sender_id,
+        platform="telegram",
+        text="/clear"
+    )
+    assert "Memory Cleared" in res_clear
+    assert len(messaging_bot_service.get_conversation_history(sender_id)) == 0

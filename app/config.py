@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     NVIDIA_REASONING_MODEL: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
 
     NVIDIA_GENERAL_KEY: str = ""
-    NVIDIA_GENERAL_MODEL: str = "meta/muse-glimmer-30b"
+    NVIDIA_GENERAL_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
 
     NVIDIA_VISION_KEY: str = ""
     NVIDIA_VISION_MODEL: str = "google/diffusiongemma-26b-a4b-it"
