@@ -9,7 +9,9 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Model Context Protocol](https://img.shields.io/badge/MCP-2.3.0-6366F1?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io)
 [![SQLite WAL](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Tests Passing](https://img.shields.io/badge/Tests-27%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests Passing](https://img.shields.io/badge/Tests-40%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
+[![Telegram Bot](https://img.shields.io/badge/Telegram-@Meiyon__ai__bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Meiyon_ai_bot)
+[![WhatsApp Chat](https://img.shields.io/badge/WhatsApp-Twilio%20API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://twilio.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
 *Architected specifically for **Mohil** (B.Tech in Computer Science with Artificial Intelligence at Mar Baselios Christian College of Engineering & Technology, Class of 2027) to manage career planning, job discovery & fraud detection, verified communications, schedules, persistent memory, and safe autonomous task execution.*
@@ -36,17 +38,20 @@ The Personal AI Manager features a high-performance Dark Glassmorphism interface
    - [D. Autonomy Modes & Human-In-The-Loop (HITL) Security Gates](#d-autonomy-modes--human-in-the-loop-hitl-security-gates)
    - [E. Factual ATS Resume Studio & Zero-Hallucination Invariant](#e-factual-ats-resume-studio--zero-hallucination-invariant)
    - [F. Mathematical Scoring & Priority Models](#f-mathematical-scoring--priority-models)
-4. [Cybersecurity & Threat Defense System](#4-cybersecurity--threat-defense-system)
-5. [Model Context Protocol (MCP) Server Specifications](#5-model-context-protocol-mcp-server-specifications)
+4. [Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)](#4-mobile-messaging--dual-channel-executive-ai-telegram--whatsapp)
+5. [Executive Prompts & Cognitive Instructions Engine (`prompts.py`)](#5-executive-prompts--cognitive-instructions-engine-promptspy)
+6. [Cybersecurity & Threat Defense System](#6-cybersecurity--threat-defense-system)
+7. [Model Context Protocol (MCP) Server Specifications](#7-model-context-protocol-mcp-server-specifications)
    - [Gmail MCP Server](#gmail-mcp-server)
    - [LinkedIn MCP Server](#linkedin-mcp-server)
-6. [Complete Repository Structure](#6-complete-repository-structure)
-7. [REST API Documentation & Endpoints](#7-rest-api-documentation--endpoints)
-8. [Setup, Quick Start & Operations](#8-setup-quick-start--operations)
+8. [Complete Repository Structure](#8-complete-repository-structure)
+9. [REST API Documentation & Endpoints](#9-rest-api-documentation--endpoints)
+10. [Setup, Quick Start & Operations](#10-setup-quick-start--operations)
    - [A. One-Click PowerShell Launcher](#a-one-click-powershell-launcher)
    - [B. Hermetic Environment Setup with uv](#b-hermetic-environment-setup-with-uv)
    - [C. Connecting Real Gmail & LinkedIn Credentials](#c-connecting-real-gmail--linkedin-credentials)
-   - [D. Running the Automated Test Suite (27/27 Tests)](#d-running-the-automated-test-suite-2727-tests)
+   - [D. Telegram & WhatsApp Bot Setup](#d-telegram--whatsapp-bot-setup)
+   - [E. Running the Automated Test Suite (40/40 Tests)](#e-running-the-automated-test-suite-4040-tests)
 
 ---
 
@@ -60,6 +65,8 @@ The **Executive Personal AI Manager** provides a hardened, local-first autonomou
 3. **Evidence-Based Job Scam Detection**: Mathematical scoring against verified ATS domains (`greenhouse.io`, `lever.co`, `workday.com`, `ashbyhq.com`) to flag fraudulent solicitations.
 4. **Factual Integrity Guarantees**: A strict factual invariant system ensuring zero resume hallucinations—showcasing real engineering achievements (autonomous drone telemetry, agentic AI, computer vision) without synthetic inflation.
 5. **Human-In-The-Loop (HITL) Security Gates**: Strict authorization barriers preventing unauthorized outbound transmissions (emails, posts, connection invites) without explicit human confirmation.
+6. **Dual-Channel Mobile Access (Telegram & WhatsApp)**: Full executive co-pilot capability via Telegram (`@Meiyon_ai_bot`) and WhatsApp (Twilio Content Template API) with real-time prompt-engineered cognition and mobile approval gates.
+7. **Cognitive Prompt & Instructions Architecture (`prompts.py`)**: Formalized cognitive instructions for messaging ergonomics, ambiguity resolution queries, and Human-in-the-Loop authorization.
 
 ---
 
@@ -340,7 +347,121 @@ Where:
 
 ---
 
-## 4. Cybersecurity & Threat Defense System
+## 4. Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)
+
+Meiyon operates directly in your pocket across **Telegram** and **WhatsApp**, functioning as an always-accessible Chief of Staff.
+
+```mermaid
+flowchart TD
+    subgraph Channels["Mobile Influx Channels"]
+        TG[Telegram Bot: @Meiyon_ai_bot]
+        WA[WhatsApp: Twilio Messaging Gateway]
+    end
+
+    subgraph Gatekeeper["Zero-Trust Security Gate"]
+        CheckSender{Sender Whitelisted in .env?}
+        Block[403 / 🔒 Unauthorized: Locked to Executive Owner]
+    end
+
+    subgraph Engine["Executive Cognitive Layer (app/prompts.py)"]
+        Parser[Command & Natural Language Parser]
+        IntentCheck{Outbound Action Triggered?}
+        LLM[NVIDIA Multi-Model Reasoning Engine]
+    end
+
+    subgraph ActionStaging["Human-In-The-Loop Safety Gate"]
+        StageDB[(Stage in SQLite Approvals)]
+        SendApproval[Push Mobile Authorization Card: /approve ID]
+    end
+
+    subgraph MCPExec["MCP Execution Layer"]
+        Exec[Execute Tool: send_email / publish_post]
+        Audit[(Log Immutable Audit Record in SQLite WAL)]
+    end
+
+    TG --> CheckSender
+    WA --> CheckSender
+    CheckSender -- No --> Block
+    CheckSender -- Yes --> Parser
+    Parser --> IntentCheck
+    IntentCheck -- Query / Briefing --> LLM
+    LLM --> TG & WA
+    IntentCheck -- Outbound Action: Email / Post --> StageDB
+    StageDB --> SendApproval
+    SendApproval --> TG & WA
+    TG & WA -- User: /approve ID --> Exec
+    Exec --> Audit
+```
+
+### Mobile Capabilities & Executive Commands:
+- **Zero-Public-URL Telegram Long Polling**: Automatically polls updates every 3 seconds via background APScheduler—zero ngrok, port forwarding, or public domain required.
+- **WhatsApp Twilio & Content Template API**: Integrates Twilio's WhatsApp Business sandbox and pre-approved Content Templates (`HXfe5ab5f00277942d4d4200328b4d403c`) for initiating outbound 24-hour conversational sessions.
+- **Strict Sender Whitelist**: Enforces `TELEGRAM_ALLOWED_CHAT_ID` and `WHATSAPP_ALLOWED_NUMBER` to guarantee that no unauthorized third party can query or trigger actions on your personal AI.
+
+| Executive Command | Description | Example Mobile Output |
+| :--- | :--- | :--- |
+| `/start` or `menu` | Displays executive directory & quick command list | Greeting & available command anchors |
+| `/briefing` or `today` | Daily top 3 priorities, overdue deadlines, and strategic AI insight | 📊 Daily Briefing with priority breakdown |
+| `/emails` or `sync emails` | Triggers Gmail MCP sync, lists recruiter inquiries with scam risk badge | 📬 Synced inquiries with intent classification |
+| `/approvals` | Reviews staged outbound actions waiting for sign-off | 🛡️ Pending action cards with Short IDs |
+| `/approve <id>` | Authorizes & executes staged email reply or LinkedIn post via MCP | ✅ Action executed successfully notification |
+| `/reject <id>` | Declines and cancels staged action; logs to audit trail | 🚫 Action safely cancelled |
+| `/tasks` | Lists current active commitments ranked by priority score | 📋 Active task commitments with deadlines |
+| Natural Language Request | Any conversational task, draft request, or analysis | Direct BLUF response or staged authorization card |
+
+---
+
+## 5. Executive Prompts & Cognitive Instructions Engine (`prompts.py`)
+
+The conversational intelligence of Meiyon across Telegram and WhatsApp is governed by a formalized prompt engineering architecture in [`app/prompts.py`](file:///c:/Users/MOHIL/Desktop/agenticai/app/prompts.py).
+
+### Core Cognitive Protocols:
+
+1. **Messaging Protocol (Proactive Outreach & Ergonomics)**:
+   - **Executive Demeanor**: Communicates with high signal-to-noise ratio; concise, outcome-oriented, and focused on execution efficiency.
+   - **Mobile Layout**: Enforces 2-3 sentence paragraph ceilings and scannable visual anchors (`📊 BRIEFING`, `🛡️ SECURITY GATE`, `⚠️ SCAM ALERT`, `📬 INQUIRY`, `📋 TASKS`).
+   - **Platform-Specific Syntax**:
+     - *Telegram*: Full Telegram Markdown (`*bold*`, `_italic_`, `` `code` ``) and slash commands.
+     - *WhatsApp*: Native WhatsApp markup (`*bold*`, `_italic_`, `~strike~`, ````monospace````) and numbered menus.
+
+2. **Clarification & Ambiguity Resolution (Zero-Assumption Rule)**:
+   - **Strict Invariant**: The AI is strictly forbidden from guessing missing critical parameters (recruiter reply tone, interview availability time slots, salary numbers, offer decisions, or destructive deletions).
+   - **Structured Numbered Choices**: Formulates 1-2 targeted questions offering multiple-choice options with a sensible recommended default (e.g., `1. Thursday 2 PM (Recommended)`, `2. Friday 10 AM`), enabling single-digit replies on mobile keyboards.
+
+3. **Response Protocol (Bottom-Line-Upfront & Zero Hallucination)**:
+   - **BLUF Formatting**: Direct answer or status delivered in the very first sentence.
+   - **Factual Truth Constraint**: Strictly bound to Mohil's verified profile (B.Tech CSE with AI at Mar Baselios Christian College '27). Will never fabricate jobs, titles, or certifications.
+
+4. **Human-In-The-Loop (HITL) Permission Protocol**:
+   - **Zero Unilateral Real-World Action**: Strict boundary between passive internal reasoning (autonomous) and active external side-effects (permission mandatory).
+   - **Permission Request Card**:
+     ```markdown
+     🛡️ SECURITY GATE: AUTHORIZATION REQUIRED
+     ━━━━━━━━━━━━━━━━━━━━━━━━━
+     🎯 Action: `EMAIL_REPLY`
+     📌 Summary: Reply to Google Recruiter
+     ⚠️ Risk Level: 🟠 HIGH RISK
+     ℹ️ _Interview availability confirmation for Thursday 2 PM._
+
+     📋 Proposed Payload Preview:
+     ```
+     Hi Sarah, Thank you for reaching out. Thursday at 2 PM IST works perfectly.
+     ```
+
+     🔑 Approval ID: `a8b2c4d1`
+
+     👉 Reply `/approve a8b2c4d1` to authorize & execute
+     👉 Reply `/reject a8b2c4d1` to decline & cancel
+     💬 Or reply with adjustments: "Change time to 3 PM"
+     ```
+   - **Action Lifecycle Handling**:
+     - *Approve*: Triggers MCP execution, logs immutable audit entry, and confirms delivery.
+     - *Reject*: Safely aborts action and logs cancellation reason.
+     - *Modify*: Re-drafts payload and issues a new permission card with an updated ID.
+
+---
+
+## 6. Cybersecurity & Threat Defense System
 
 In an autonomous agent system, untrusted email bodies and recruiter messages represent an adversarial attack vector. The Personal AI Manager implements a multi-layer defense system:
 
@@ -378,7 +499,7 @@ In an autonomous agent system, untrusted email bodies and recruiter messages rep
 
 ---
 
-## 5. Model Context Protocol (MCP) Server Specifications
+## 7. Model Context Protocol (MCP) Server Specifications
 
 ### Gmail MCP Server
 - **Path**: `mcp_servers/gmail_server.py`
@@ -405,7 +526,7 @@ In an autonomous agent system, untrusted email bodies and recruiter messages rep
 
 ---
 
-## 6. Complete Repository Structure
+## 8. Complete Repository Structure
 
 ```
 agenticai/
@@ -423,7 +544,8 @@ agenticai/
 │   │   ├── routes_profile.py         # Verified candidate profile & memory
 │   │   ├── routes_reminders.py       # Reminder scheduling, triggers & snooze
 │   │   ├── routes_system.py          # Point-in-time backups & autonomy mode
-│   │   └── routes_tasks.py           # Task CRUD & commitment verification
+│   │   ├── routes_tasks.py           # Task CRUD & commitment verification
+│   │   └── routes_webhooks.py        # Telegram & WhatsApp live messaging webhooks
 │   ├── models/                       # Pydantic Schemas (v2)
 │   │   ├── approval.py               # Security gate & audit models
 │   │   ├── briefing.py               # Executive summary models
@@ -436,8 +558,11 @@ agenticai/
 │   │   ├── briefing_service.py       # Priority ranking & executive briefing
 │   │   ├── communication_service.py  # Injection sanitizer & recruiter triage
 │   │   ├── job_service.py            # Fraud detector & ATS matcher
+│   │   ├── llm_service.py            # NVIDIA multi-model orchestrator
 │   │   ├── mcp_service.py            # MCP Client orchestrator & sync
+│   │   ├── messaging_bot_service.py  # Telegram & WhatsApp bot dispatcher
 │   │   ├── profile_service.py        # Profile persistence
+│   │   ├── prompts.py                # Cognitive prompts & instructions proxy
 │   │   ├── reminder_service.py       # Background scheduler & alert delivery
 │   │   ├── resume_service.py         # ATS tailoring & application tracking
 │   │   └── task_service.py           # Task lifecycle persistence
@@ -447,7 +572,8 @@ agenticai/
 │   │   └── index.html                # Executive Web Dashboard
 │   ├── config.py                     # App Settings & environment variables
 │   ├── database.py                   # SQLite connection, WAL mode, migrations & seed
-│   └── main.py                       # FastAPI application & scheduler lifecycle
+│   ├── main.py                       # FastAPI application & scheduler lifecycle
+│   └── prompts.py                    # Executive prompts & HITL permission templates
 ├── assets/                           # High-Resolution Architectural Graphics
 │   ├── architecture_hero.png         # Infographic banner
 │   ├── agent_cognition_loop.jpg      # Cognitive architecture workflow
@@ -459,7 +585,7 @@ agenticai/
 │   ├── __init__.py
 │   ├── gmail_server.py               # Gmail MCP server (IMAP/SMTP/OAuth/Sandbox)
 │   └── linkedin_server.py            # LinkedIn MCP server (Playwright browser/Sandbox)
-├── tests/                            # Automated Pytest Suite (27/27 Tests)
+├── tests/                            # Automated Pytest Suite (40/40 Tests)
 │   ├── test_api.py                   # REST endpoint tests
 │   ├── test_approvals.py             # Security gate & audit tests
 │   ├── test_briefing.py              # Briefing & priority ranking tests
@@ -467,17 +593,20 @@ agenticai/
 │   ├── test_communication.py         # Prompt injection & scam triage tests
 │   ├── test_database.py              # SQLite WAL mode & backup/restore tests
 │   ├── test_mcp.py                   # Gmail & LinkedIn MCP server & tool tests
+│   ├── test_messaging.py             # Telegram & WhatsApp webhook tests
+│   ├── test_prompts.py               # Executive prompts & HITL protocol tests
 │   ├── test_reminders.py             # Reminder delivery & snooze tests
 │   └── test_tasks.py                 # Task CRUD & confirmed status tests
 ├── .env.example                      # Template environment variables
 ├── MCP_SETUP_GUIDE.md                # Quick visual guide for Gmail & LinkedIn setup
 ├── run.ps1                           # One-click Windows PowerShell launcher
+├── send_whatsapp_chat.py             # WhatsApp template launcher script
 └── README.md                         # Project documentation
 ```
 
 ---
 
-## 7. REST API Documentation & Endpoints
+## 9. REST API Documentation & Endpoints
 
 | Method | Endpoint | Description | Security Guardrail |
 | :--- | :--- | :--- | :--- |
@@ -494,10 +623,14 @@ agenticai/
 | `POST` | `/api/approvals/{id}/decision` | Authorizes or rejects a staged action | User Decision Logged |
 | `GET` | `/api/audit-logs` | Retrieves tamper-proof audit trail of system events | Immutable Audit |
 | `POST` | `/api/system/backup` | Creates an atomic point-in-time database snapshot | Backup System |
+| `GET` | `/api/webhooks/status` | Checks live status of Telegram & WhatsApp gateways | Read-only |
+| `POST` | `/api/webhooks/telegram` | Inbound Telegram webhook endpoint (alternative to polling) | Whitelist Guarded |
+| `POST` | `/api/webhooks/whatsapp` | Inbound Twilio WhatsApp webhook for mobile chat & decisions| Whitelist Guarded |
+| `POST` | `/api/webhooks/whatsapp/send-template` | Triggers outbound WhatsApp Content Template message | Session Initiator |
 
 ---
 
-## 8. Setup, Quick Start & Operations
+## 10. Setup, Quick Start & Operations
 
 ### A. One-Click PowerShell Launcher
 
@@ -515,8 +648,8 @@ This script automatically verifies the `uv` environment, runs database migration
 
 ```powershell
 # 1. Clone repository
-git clone https://github.com/Mohilc/PersonalAIManager.git
-cd PersonalAIManager
+git clone https://github.com/Mohilc/meiyonpersonalai.git
+cd meiyonpersonalai
 
 # 2. Run application via uv
 uv run python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -554,14 +687,42 @@ By default, the application runs in **Simulation Sandbox mode** (safe offline mo
      LINKEDIN_HEADLESS="true"
      ```
 
-> [!TIP]
-> For a visual walkthrough of setting up credentials, refer to [MCP_SETUP_GUIDE.md](MCP_SETUP_GUIDE.md).
+---
+
+### D. Telegram & WhatsApp Bot Setup
+
+1. **Telegram Setup**:
+   - Create a bot via [@BotFather](https://t.me/BotFather) and copy your bot token.
+   - Update `.env`:
+     ```env
+     TELEGRAM_ENABLED="true"
+     TELEGRAM_BOT_TOKEN="your_bot_token"
+     TELEGRAM_ALLOWED_CHAT_ID="your_telegram_user_id"
+     ```
+   - Start the server (`.\run.ps1`). The bot starts long-polling automatically! Message [@Meiyon_ai_bot](https://t.me/Meiyon_ai_bot) with `/start`.
+
+2. **WhatsApp Setup**:
+   - Sign up at [twilio.com/console](https://console.twilio.com) and navigate to **Messaging -> Try WhatsApp Sandbox**.
+   - Update `.env`:
+     ```env
+     WHATSAPP_ENABLED="true"
+     TWILIO_ACCOUNT_SID="ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+     TWILIO_AUTH_TOKEN="your_auth_token"
+     TWILIO_WHATSAPP_NUMBER="whatsapp:+17372508034"
+     TWILIO_CONTENT_SID="HXfe5ab5f00277942d4d4200328b4d403c"
+     WHATSAPP_ALLOWED_NUMBER="+918590144798"
+     ```
+   - Send the initial template session message:
+     ```powershell
+     .venv\Scripts\python.exe send_whatsapp_chat.py
+     ```
+   - Point your Twilio Sandbox webhook URL to `https://<your-ngrok-domain>.ngrok-free.app/api/webhooks/whatsapp` (HTTP POST).
 
 ---
 
-### D. Running the Automated Test Suite (27/27 Tests)
+### E. Running the Automated Test Suite (40/40 Tests)
 
-The test suite validates database WAL mode, point-in-time backup snapshots, prompt-injection defense, fraud detection, priority ranking, and MCP tool executions:
+The test suite validates database WAL mode, point-in-time backup snapshots, prompt-injection defense, fraud detection, priority ranking, Telegram & WhatsApp webhooks, executive prompts, and MCP tool executions:
 
 ```powershell
 uv run pytest -v
@@ -572,23 +733,25 @@ uv run pytest -v
 platform win32 -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
 rootdir: C:\Users\MOHIL\Desktop\agenticai
 plugins: anyio-4.15.1
-collected 27 items
+collected 40 items
 
-tests/test_api.py ......................... [ 18%]
-tests/test_approvals.py ................... [ 22%]
-tests/test_briefing.py .................... [ 25%]
-tests/test_career.py ...................... [ 37%]
-tests/test_communication.py ............... [ 55%]
-tests/test_database.py .................... [ 66%]
-tests/test_mcp.py ......................... [ 88%]
-tests/test_reminders.py ................... [ 92%]
+tests/test_api.py ......................... [ 12%]
+tests/test_approvals.py ................... [ 15%]
+tests/test_briefing.py .................... [ 17%]
+tests/test_career.py ...................... [ 25%]
+tests/test_communication.py ............... [ 37%]
+tests/test_database.py .................... [ 45%]
+tests/test_mcp.py ......................... [ 60%]
+tests/test_messaging.py ................... [ 70%]
+tests/test_prompts.py ..................... [ 92%]
+tests/test_reminders.py ................... [ 95%]
 tests/test_tasks.py ....................... [100%]
 
-============================= 27 passed in 45.79s =============================
+============================= 40 passed in 90.71s =============================
 ```
 
 ---
 
 <div align="center">
-  <sub>Engineered with precision for executive AI management • Built with FastAPI, SQLite WAL, and Model Context Protocol</sub>
+  <sub>Engineered with precision for executive AI management • Built with FastAPI, SQLite WAL, Model Context Protocol, Telegram & WhatsApp</sub>
 </div>
