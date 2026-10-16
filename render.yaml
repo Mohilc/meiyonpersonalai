@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: meiyon-personal-ai
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    disk:
+      name: meiyon-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: APP_NAME
+        value: "Meiyon Personal AI"
+      - key: AUTONOMY_MODE
+        value: "SUPERVISED"
+      - key: TIMEZONE
+        value: "Asia/Kolkata"

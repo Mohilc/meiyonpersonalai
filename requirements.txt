@@ -1,0 +1,24 @@
+# Core Web Framework & Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-multipart>=0.0.12
+python-dotenv>=1.0.0
+
+# Asynchronous HTTP & Background Scheduler
+httpx>=0.28.0
+apscheduler>=3.10.0
+
+# Mobile Messaging Integrations
+twilio>=9.12.0
+
+# Model Context Protocol (MCP) & Automation
+mcp>=1.0.0
+playwright>=1.49.0
+
+# Testing
+pytest>=8.3.0
+
+# OS Specific
+pywin32>=306; sys_platform == 'win32'
