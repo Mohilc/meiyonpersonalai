@@ -251,13 +251,15 @@ def format_permission_request(
     risk_badge = risk_badges.get(risk_level.upper(), "🟡 MEDIUM RISK")
 
     if clean_platform == PLATFORM_TELEGRAM:
+        safe_title = title.replace("_", "\\_")
+        safe_desc = description.replace("_", "\\_")
         return (
             f"🛡️ *SECURITY GATE: AUTHORIZATION REQUIRED*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🎯 *Action:* `{action_type}`\n"
-            f"📌 *Summary:* {title}\n"
+            f"📌 *Summary:* {safe_title}\n"
             f"⚠️ *Risk Level:* {risk_badge}\n"
-            f"ℹ️ _{description}_\n\n"
+            f"ℹ️ _{safe_desc}_\n\n"
             f"📋 *Proposed Payload Preview:*\n"
             f"```\n{payload_preview.strip()}\n```\n\n"
             f"🔑 *Approval ID:* `{short_id}`\n\n"
@@ -291,12 +293,13 @@ def format_action_executed_notification(
     """Notification confirming that an approved action was executed via MCP."""
     short_id = approval_id[:8]
     if platform.lower().strip() == PLATFORM_TELEGRAM:
+        safe_title = action_title.replace("_", "\\_")
         return (
             f"✅ *ACTION EXECUTED SUCCESSFULLY*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📌 *Action:* {action_title}\n"
+            f"📌 *Action:* {safe_title}\n"
             f"🔑 *Approval ID:* `{short_id}`\n"
-            f"📡 *Execution Result:*\n{result_summary}\n\n"
+            f"📡 *Execution Result:*\n```\n{result_summary.strip()}\n```\n\n"
             f"🔒 Immutable audit log recorded in SQLite WAL."
         )
     else:
@@ -317,16 +320,19 @@ def format_action_rejected_notification(
 ) -> str:
     """Notification confirming that a staged action was declined and aborted."""
     short_id = approval_id[:8]
-    reason_str = f"\n📝 *Reason:* _{reason}_" if reason else ""
     if platform.lower().strip() == PLATFORM_TELEGRAM:
+        safe_title = action_title.replace("_", "\\_")
+        safe_reason = reason.replace("_", "\\_") if reason else ""
+        reason_str = f"\n📝 *Reason:* _{safe_reason}_" if safe_reason else ""
         return (
             f"🚫 *ACTION CANCELLED BY USER*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📌 *Action:* {action_title}\n"
+            f"📌 *Action:* {safe_title}\n"
             f"🔑 *Approval ID:* `{short_id}`{reason_str}\n\n"
             f"🛡️ Action safely discarded. No external transmissions made."
         )
     else:
+        reason_str = f"\n📝 *Reason:* _{reason}_" if reason else ""
         return (
             f"🚫 *ACTION CANCELLED BY USER*\n"
             f"-----------------------------------------\n"

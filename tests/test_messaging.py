@@ -81,3 +81,66 @@ def test_whatsapp_twilio_webhook_endpoint():
     assert "<Response>" in resp.text
     assert "<Message>" in resp.text
     assert "Welcome" in resp.text
+
+def test_linkedin_link_variations_and_agentic_flow():
+    """Verifies that all LinkedIn profile URL variations trigger the HITL permission gate and can be approved."""
+    # 1. Standard URL
+    res1 = messaging_bot_service.handle_incoming_text("any", "telegram", "https://www.linkedin.com/in/mohil-c")
+    assert "SECURITY GATE" in res1
+    assert "LINKEDIN_INVITE" in res1
+    assert "Mohil C" in res1
+
+    # 2. Regional URL (in.linkedin.com)
+    res2 = messaging_bot_service.handle_incoming_text("any", "telegram", "https://in.linkedin.com/in/sarah-jenkins")
+    assert "SECURITY GATE" in res2
+    assert "Sarah Jenkins" in res2
+
+    # 3. Missing scheme and with tracking params
+    wa_sender = settings.WHATSAPP_ALLOWED_NUMBER or "+918590144798"
+    res3 = messaging_bot_service.handle_incoming_text(wa_sender, "whatsapp", "linkedin.com/in/dr-rajesh-kumar?utm_source=share")
+    assert "SECURITY GATE" in res3
+    assert "Dr Rajesh Kumar" in res3
+
+    # 4. Conversational wrapping ("check this linkedin link: ...")
+    res4 = messaging_bot_service.handle_incoming_text("any", "telegram", "check this linkedin link: https://www.linkedin.com/in/ananya-sharma")
+    assert "SECURITY GATE" in res4
+    assert "Ananya Sharma" in res4
+
+    # 5. Custom note extraction
+    res5 = messaging_bot_service.handle_incoming_text(
+        "any", "telegram",
+        "connect linkedin.com/in/vikram-menon note: Interested in your ML internship cohort"
+    )
+    assert "SECURITY GATE" in res5
+    assert "Interested in your ML internship cohort" in res5
+
+    # 6. Approving staged invite via chatbot command
+    # Extract approval ID from res5
+    import re
+    appr_match = re.search(r"/approve ([a-f0-9]{8})", res5)
+    assert appr_match is not None
+    short_id = appr_match.group(1)
+    res_approve = messaging_bot_service.handle_incoming_text("any", "telegram", f"/approve {short_id}")
+    assert "ACTION EXECUTED SUCCESSFULLY" in res_approve
+
+def test_linkedin_diagnostics_and_features():
+    """Verifies LinkedIn diagnostics, post detection, and profile inspection."""
+    # 1. Diagnostics trigger when user asks why LinkedIn link is not working
+    res_diag = messaging_bot_service.handle_incoming_text("any", "telegram", "why is linkedin link not working?")
+    assert "MCP SYSTEM DIAGNOSTICS" in res_diag
+    assert "LinkedIn MCP" in res_diag
+
+    # 2. LinkedIn Post link detection
+    res_post = messaging_bot_service.handle_incoming_text(
+        "any", "telegram",
+        "https://www.linkedin.com/posts/mohil-c_autonomous-drones-telemetry-activity-712345"
+    )
+    assert "LinkedIn Post Link Detected" in res_post
+
+    # 3. View Profile inspection
+    res_view = messaging_bot_service.handle_incoming_text(
+        "any", "telegram",
+        "view profile https://www.linkedin.com/in/mohil-c"
+    )
+    assert "LinkedIn Profile Summary" in res_view
+

@@ -1,5 +1,6 @@
 """Messaging Bot Service for Telegram & WhatsApp Executive AI Access."""
 import os
+import re
 import json
 import logging
 from typing import Optional, Dict, Any, List
@@ -23,11 +24,23 @@ from app.prompts import (
     PLATFORM_TELEGRAM,
     PLATFORM_WHATSAPP
 )
+from mcp_servers import linkedin_server
 
 logger = logging.getLogger(__name__)
 
 # Track Telegram message offset to avoid duplicate processing
 _LAST_TELEGRAM_OFFSET = 0
+
+# Comprehensive LinkedIn URL patterns supporting international subdomains (in.linkedin.com, etc.),
+# missing schemes (linkedin.com/in/...), and tracking query parameters (?utm_source=...)
+LINKEDIN_PROFILE_PATTERN = re.compile(
+    r'(?:https?://)?(?:[a-zA-Z0-9_.-]+\.)?linkedin\.com/(?:in|profile)/([a-zA-Z0-9_\-%]+)/?(?:\?[^\s]*)?',
+    re.IGNORECASE
+)
+LINKEDIN_POST_PATTERN = re.compile(
+    r'(?:https?://)?(?:[a-zA-Z0-9_.-]+\.)?linkedin\.com/(?:posts|feed/update)/[^\s]+',
+    re.IGNORECASE
+)
 
 def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
     """
@@ -57,11 +70,12 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "Here are your quick executive commands:\n"
             "• `/briefing` - Today's top priorities & strategic AI advice\n"
             "• `/emails` - Check Gmail & unread recruiter triage\n"
+            "• `/linkedin` - Check LinkedIn messages & connection requests\n"
             "• `/approvals` - View staged actions awaiting your approval\n"
-            "• `/approve <id>` - Authorize staged email reply or post\n"
+            "• `/approve <id>` - Authorize staged email reply, post or invite\n"
             "• `/reject <id>` - Decline staged action\n"
             "• `/tasks` - View scheduled task commitments\n\n"
-            "💬 *Or just talk naturally!* You can ask me to draft emails, evaluate job offers, or plan your schedule."
+            "💬 *Or just talk naturally!* Send a LinkedIn profile link to stage a connection invite, ask me to draft emails, or plan your schedule."
         )
 
     if cmd in ("/briefing", "briefing", "today", "schedule"):
@@ -92,6 +106,48 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             lines.append(f"\n• *From:* {e.sender}\n  *Subject:* {e.subject}\n  *Status:* {risk_badge} ({e.detected_intent.value})")
         lines.append("\nType `/approvals` to review any staged responses.")
         return "\n".join(lines)
+
+    if cmd in ("/linkedin", "linkedin", "sync linkedin", "linkedin link", "linkedin links", "check linkedin", "linkedin status", "linkedin updates", "/li"):
+        res = mcp_service.sync_linkedin_activity_via_mcp(limit=3)
+        if not res.interactions:
+            return (
+                "💼 *LinkedIn MCP Status:*\n"
+                "Zero new recruiter messages or pending connection requests right now. All caught up!\n\n"
+                "💡 *Pro-tip:* Send any LinkedIn profile link (e.g. `https://www.linkedin.com/in/username` or `linkedin.com/in/username`) to automatically stage a personalized connection invite!"
+            )
+        lines = [f"💼 *Synced {len(res.interactions)} LinkedIn Interactions via MCP:*"]
+        for item in res.interactions:
+            title_str = f" ({item.sender_title})" if item.sender_title else ""
+            co_str = f" at {item.company}" if item.company else ""
+            content_snippet = item.content.replace("\n", " ").strip()
+            if len(content_snippet) > 100:
+                content_snippet = content_snippet[:97] + "..."
+            lines.append(f"\n• *{item.interaction_type}:* *{item.sender_name}*{title_str}{co_str}\n  _{content_snippet}_")
+            if item.profile_url:
+                lines.append(f"  🔗 Profile: {item.profile_url}")
+        lines.append("\nType `/approvals` to review any staged responses, or paste any LinkedIn profile link to stage a connection invite.")
+        return "\n".join(lines)
+
+    # Diagnostic & Troubleshooting Trigger for LinkedIn / MCP
+    if any(p in cmd for p in ("mcp status", "why is linkedin", "linkedin not working", "linkedin error", "diagnostics", "check mcp", "system status")):
+        mcp_stat = mcp_service.get_mcp_system_status()
+        li_stat = mcp_stat.linkedin
+        gm_stat = mcp_stat.gmail
+        return (
+            "🛰️ *MCP SYSTEM DIAGNOSTICS & HEALTH*\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💼 *LinkedIn MCP:* {'🟢 Connected' if li_stat.get('connected') else '🔴 Disconnected'}\n"
+            f"  • *Mode:* `{li_stat.get('mode')}`\n"
+            f"  • *Session Cookie:* {'✅ Active' if li_stat.get('session_cookie_configured') else '⚠️ Not Set (Using Simulation)'}\n"
+            f"  • *Headless Browser:* `{li_stat.get('headless')}`\n\n"
+            f"📬 *Gmail MCP:* {'🟢 Connected' if gm_stat.get('connected') else '🔴 Disconnected'}\n"
+            f"  • *Mode:* `{gm_stat.get('mode')}`\n"
+            f"  • *Address:* `{gm_stat.get('configured_address')}`\n\n"
+            "💡 *How to Use LinkedIn in Chat:*\n"
+            "• *Send Profile Link:* Paste any profile URL (e.g. `https://www.linkedin.com/in/username` or `linkedin.com/in/username`) to automatically stage a connection invite.\n"
+            "• *Add Custom Note:* `connect linkedin.com/in/username note: Looking forward to discussing ML roles`\n"
+            "• *Inspect Profile:* `view profile linkedin.com/in/username`"
+        )
 
     if cmd in ("/approvals", "approvals"):
         pending = audit_service.list_approvals(status="PENDING")
@@ -150,9 +206,97 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             lines.append(f"• *{t.title}* [{t.priority.value}] {due}")
         return "\n".join(lines)
 
-    # 3. Agentic Intent Detection: Proactive Permission Staging for Outbound Actions
-    if cmd.startswith("post on linkedin:") or cmd.startswith("post to linkedin:"):
-        prefix = "post on linkedin:" if cmd.startswith("post on linkedin:") else "post to linkedin:"
+    # 3. Agentic Intent: Detect LinkedIn Post URL
+    post_match = LINKEDIN_POST_PATTERN.search(clean_text)
+    if post_match:
+        post_url = post_match.group(0)
+        return (
+            f"🔗 *LinkedIn Post Link Detected:*\n`{post_url}`\n\n"
+            f"I can draft an authentic, insightful response or comment for this post!\n"
+            f"💬 Reply with what you would like to say, for example:\n"
+            f"_\"Draft an encouraging comment highlighting drone telemetry advances\"_"
+        )
+
+    # 4. Agentic Intent: Detect Any LinkedIn Profile URL -> View Profile or Proactively Stage Connection Invite
+    linkedin_match = LINKEDIN_PROFILE_PATTERN.search(clean_text)
+    if linkedin_match:
+        raw_slug = linkedin_match.group(1)
+        raw_handle = raw_slug.replace("-", " ").replace("_", " ").title()
+        matched_url = linkedin_match.group(0)
+        clean_url = matched_url.split("?")[0].rstrip("/")
+        if not clean_url.startswith("http://") and not clean_url.startswith("https://"):
+            canonical_url = f"https://{clean_url}"
+        else:
+            canonical_url = clean_url
+
+        # Check if user explicitly asked to view/inspect profile details
+        if any(k in cmd for k in ("inspect", "view profile", "who is", "profile details", "check profile", "details")):
+            try:
+                raw_prof = linkedin_server.get_linkedin_profile(canonical_url)
+                prof_data = json.loads(raw_prof).get("profile", {})
+                name = prof_data.get("full_name") or raw_handle
+                headline = prof_data.get("headline", "Professional on LinkedIn")
+                education = prof_data.get("education", "")
+                skills = ", ".join(prof_data.get("skills", [])) if isinstance(prof_data.get("skills"), list) else ""
+                summary = prof_data.get("summary", "")
+
+                resp_lines = [
+                    f"👤 *LinkedIn Profile Summary:*",
+                    f"• *Name:* {name}",
+                    f"• *Headline:* {headline}",
+                ]
+                if education:
+                    resp_lines.append(f"• *Education:* {education}")
+                if skills:
+                    resp_lines.append(f"• *Key Skills:* {skills}")
+                if summary:
+                    resp_lines.append(f"• *Summary:* _{summary}_")
+                resp_lines.append(f"\n🔗 *URL:* {canonical_url}")
+                resp_lines.append(f"\n👉 To send a connection request, reply: `connect {canonical_url}`")
+                return "\n".join(resp_lines)
+            except Exception as e:
+                logger.warning("Error fetching LinkedIn profile: %s", str(e))
+
+        # Default Agentic Behavior: Stage personalized connection invite with HITL approval
+        custom_note_match = re.search(r"(?:note|message|msg|saying)[:\s]+(.+)", clean_text, re.IGNORECASE)
+        if custom_note_match:
+            note_text = custom_note_match.group(1).strip()
+        else:
+            note_text = (
+                f"Hi {raw_handle}, I came across your profile and was impressed by your work. "
+                f"As an AI & CSE student at Mar Baselios Christian College ('27), I would love to connect and follow your journey!"
+            )
+        if len(note_text) > 300:
+            note_text = note_text[:297] + "..."
+
+        appr = audit_service.create_approval_request(
+            title=f"Send LinkedIn Invite to {raw_handle}",
+            description=f"Personalized connection request for {raw_handle}",
+            action_payload={
+                "action_type": "LINKEDIN_INVITE",
+                "profile_url": canonical_url,
+                "note": note_text
+            },
+            risk_level=RiskLevelEnum.MEDIUM
+        )
+        return format_permission_request(
+            approval_id=appr.id,
+            action_type="LINKEDIN_INVITE",
+            title=f"Send LinkedIn Invite to {raw_handle}",
+            description="Personalized connection request note (strictly under 300 chars).",
+            payload_preview=f"Target: {canonical_url}\nNote:\n\"{note_text}\"",
+            risk_level="MEDIUM",
+            platform=platform
+        )
+
+    # 4. Agentic Intent: Post on LinkedIn
+    if cmd.startswith("post on linkedin:") or cmd.startswith("post to linkedin:") or cmd.startswith("/post "):
+        if cmd.startswith("post on linkedin:"):
+            prefix = "post on linkedin:"
+        elif cmd.startswith("post to linkedin:"):
+            prefix = "post to linkedin:"
+        else:
+            prefix = "/post "
         post_content = clean_text[len(prefix):].strip()
         if post_content:
             appr = audit_service.create_approval_request(
@@ -191,7 +335,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
 
 
 def send_telegram_message(chat_id: str, text: str) -> bool:
-    """Dispatches a message to a user on Telegram."""
+    """Dispatches a message to a user on Telegram with automatic fallback for markdown parse errors."""
     if not settings.TELEGRAM_BOT_TOKEN:
         return False
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -203,7 +347,15 @@ def send_telegram_message(chat_id: str, text: str) -> bool:
     try:
         with httpx.Client(timeout=8.0) as client:
             resp = client.post(url, json=payload)
-            return resp.status_code == 200
+            if resp.status_code == 200:
+                return True
+            # Fallback: Retry sending as plain text if Telegram Markdown entity parsing fails (e.g. underscores in URLs)
+            if resp.status_code == 400:
+                logger.warning("Telegram Markdown entity parse failed (%s), retrying as plain text...", resp.text)
+                fallback_payload = {"chat_id": chat_id, "text": text}
+                retry_resp = client.post(url, json=fallback_payload)
+                return retry_resp.status_code == 200
+            return False
     except Exception as e:
         logger.error("Failed sending Telegram message: %s", str(e))
         return False

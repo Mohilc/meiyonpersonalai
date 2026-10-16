@@ -9,7 +9,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Model Context Protocol](https://img.shields.io/badge/MCP-2.3.0-6366F1?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io)
 [![SQLite WAL](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Tests Passing](https://img.shields.io/badge/Tests-40%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests Passing](https://img.shields.io/badge/Tests-42%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
 [![Telegram Bot](https://img.shields.io/badge/Telegram-@Meiyon__ai__bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Meiyon_ai_bot)
 [![WhatsApp Chat](https://img.shields.io/badge/WhatsApp-Twilio%20API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://twilio.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
@@ -403,8 +403,13 @@ flowchart TD
 | `/start` or `menu` | Displays executive directory & quick command list | Greeting & available command anchors |
 | `/briefing` or `today` | Daily top 3 priorities, overdue deadlines, and strategic AI insight | 📊 Daily Briefing with priority breakdown |
 | `/emails` or `sync emails` | Triggers Gmail MCP sync, lists recruiter inquiries with scam risk badge | 📬 Synced inquiries with intent classification |
+| `/linkedin` or `linkedin` | Syncs LinkedIn recruiter messages & connection requests via MCP | 💼 Synced LinkedIn interactions & profile links |
+| `linkedin.com/in/<user>` | Paste any LinkedIn profile link to stage personalized invite (<300 chars) | 🛡️ Security Gate with Note Preview & Short ID |
+| `connect <url> note: ...` | Connect with custom note instead of automated template | 🛡️ Custom Note Staged for Approval |
+| `view profile <url>` | Extracts profile headline, education, skills, and summary | 👤 LinkedIn Profile Summary Card |
+| `mcp status` or diagnostics | Checks live health of LinkedIn & Gmail MCP servers | 🛰️ MCP System Diagnostics & Connection State |
 | `/approvals` | Reviews staged outbound actions waiting for sign-off | 🛡️ Pending action cards with Short IDs |
-| `/approve <id>` | Authorizes & executes staged email reply or LinkedIn post via MCP | ✅ Action executed successfully notification |
+| `/approve <id>` | Authorizes & executes staged email reply, LinkedIn invite, or post | ✅ Action executed successfully notification |
 | `/reject <id>` | Declines and cancels staged action; logs to audit trail | 🚫 Action safely cancelled |
 | `/tasks` | Lists current active commitments ranked by priority score | 📋 Active task commitments with deadlines |
 | Natural Language Request | Any conversational task, draft request, or analysis | Direct BLUF response or staged authorization card |
