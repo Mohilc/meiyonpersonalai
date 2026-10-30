@@ -38,6 +38,38 @@ def generate_contextual_fallback(prompt: str, candidate_name: str = "Mohil") -> 
             f"Are we looking to improve inference frame rate, minimize latency, or enhance tracking accuracy?"
         )
         
+    if any(w in clean_p for w in ("email", "mail", "gmail", "inbox", "message", "recruiter email")):
+        try:
+            from app.services import mcp_service
+            recent = mcp_service.get_active_inbox_emails(limit=3, sync_live=False)
+            if recent:
+                lines = [f"📬 *Here are your latest active emails, {candidate_name}:*"]
+                for i, em in enumerate(recent, 1):
+                    snip = em.body.replace("\n", " ").strip()
+                    if len(snip) > 110:
+                        snip = snip[:107] + "..."
+                    lines.append(f"\n*{i}.* *From:* {em.sender}\n   *Subject:* {em.subject}\n   *Snippet:* _{snip}_\n   👉 Read: `/email {i}`")
+                lines.append("\n👉 Reply `/email 1` to read the full body or `/emails` for all messages.")
+                return "\n".join(lines)
+        except Exception:
+            pass
+
+    if any(w in clean_p for w in ("attendance", "absent", "present in", "classes", "my subject")):
+        try:
+            from app.services import academic_service
+            att = academic_service.get_attendance_summary()
+            status_text = "Safe ✅" if att.is_safe else "Warning (<75%) ⚠️"
+            lines = [
+                f"🎓 *College Attendance Status:* *{att.overall_percentage}%* ({status_text})",
+                f"• Attended: {att.total_attended} / {att.total_classes} | Absences: {att.total_absent}\n"
+            ]
+            for s in att.subjects[:4]:
+                lines.append(f"• *{s.subject}:* {s.percentage}% ({s.attended}/{s.total_classes})")
+            lines.append("\n👉 Reply `/absent <subject>` to log absence, or `/pdf` for your PDF report.")
+            return "\n".join(lines)
+        except Exception:
+            pass
+
     if any(w in clean_p for w in ("internship", "job", "career", "resume", "recruit", "interview")):
         return (
             f"Career strategy is our core mission, {candidate_name}! "

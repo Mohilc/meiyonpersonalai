@@ -101,11 +101,13 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/pdf` or `/report` - Compile & receive Attendance & Assignment PDF report\n\n"
             "💼 *Executive & Career Management:*\n"
             "• `/briefing` - Today's top priorities & strategic AI advice\n"
-            "• `/emails` - Check Gmail & unread recruiter triage\n"
+            "• `/emails` - Live Gmail inbox & recruiter communications\n"
+            "• `/email <1-5>` - Read full email body & details\n"
+            "• `/reply <1-5>` - Stage AI email response with approval gate\n"
             "• `/linkedin` - Check LinkedIn messages & connection requests\n"
             "• `/tasks` - View scheduled task commitments\n"
             "• `/clear` - Reset conversation memory buffer\n\n"
-            "💬 *Or just chat naturally!* E.g. 'I was absent in AI today', 'Mark me present in Drone Lab', or 'Send my attendance pdf'."
+            "💬 *Or just chat naturally!* E.g. 'What emails do I have?', 'Read email 1', 'I was absent in AI today', or 'Send my attendance pdf'."
         )
 
     if cmd in ("/clear", "clear", "reset", "reset chat", "clear memory"):
@@ -133,16 +135,118 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"💡 *Executive Summary & AI Insight:*\n{briefing.executive_summary}"
         )
 
-    if cmd in ("/emails", "emails", "sync emails"):
-        res = mcp_service.sync_unread_emails_via_mcp(limit=3)
-        if not res.new_emails:
-            return "📬 *Gmail MCP:* Zero new unread recruiter emails right now. Inbox is clean!"
-        lines = [f"📬 *Synced {len(res.new_emails)} Inquiries via Gmail MCP:*"]
-        for e in res.new_emails:
+    # 2. Executive Commands Routing: Emails & Live Gmail MCP
+    EMAIL_TRIGGER_WORDS = (
+        "/emails", "emails", "sync emails", "check emails", "check email",
+        "fetch emails", "my emails", "inbox", "check inbox", "show emails",
+        "email list", "latest emails", "unread emails", "check mail",
+        "check gmail", "mail", "fetch email details", "get emails",
+        "read emails", "email details"
+    )
+    if cmd in EMAIL_TRIGGER_WORDS or any(cmd.startswith(pfx) for pfx in ("check my email", "what emails", "show my email", "get my email")):
+        emails = mcp_service.get_active_inbox_emails(limit=5, sync_live=True)
+        if not emails:
+            return (
+                "📬 *Gmail MCP:* Your inbox is clean! Zero unread emails right now.\n\n"
+                f"Configured Account: `{settings.GMAIL_ADDRESS}`"
+            )
+        lines = [
+            f"📬 *GMAIL INBOX — ACTIVE COMMUNICATIONS*",
+            f"• *Account:* `{settings.GMAIL_ADDRESS}`",
+            f"• *Found:* {len(emails)} active inquiries in inbox\n"
+        ]
+        for idx, e in enumerate(emails, 1):
             risk_badge = f"[{e.phishing_risk.value}]" if e.phishing_risk.value != "LOW" else "✅ Verified"
-            lines.append(f"\n• *From:* {e.sender}\n  *Subject:* {e.subject}\n  *Status:* {risk_badge} ({e.detected_intent.value})")
-        lines.append("\nType `/approvals` to review any staged responses.")
+            clean_snippet = e.body.replace("\n", " ").strip()
+            if len(clean_snippet) > 120:
+                clean_snippet = clean_snippet[:117] + "..."
+            short_id = e.id[:8]
+            lines.append(
+                f"*{idx}.* *From:* {e.sender}\n"
+                f"   *Subject:* {e.subject}\n"
+                f"   *Status:* {risk_badge} ({e.detected_intent.value})\n"
+                f"   *Snippet:* _{clean_snippet}_\n"
+                f"   👉 Read: `/email {idx}` | Reply: `/reply {idx}`\n"
+            )
+        lines.append("💡 *Actions:* Reply `/email 1` (or 2, 3...) to read the full body, or `/reply 1` to draft an email response.")
         return "\n".join(lines)
+
+    if (
+        cmd.startswith("/email ") or cmd.startswith("/read ") or
+        cmd.startswith("read email ") or cmd.startswith("view email ") or
+        cmd.startswith("open email ") or cmd.startswith("show email ") or
+        cmd.startswith("email details ") or cmd.startswith("details of email ")
+    ):
+        raw = clean_text
+        for pfx in ("/email ", "/read ", "read email ", "view email ", "open email ", "show email ", "email details ", "details of email "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        matched_email = mcp_service.get_email_by_identifier(raw)
+        if not matched_email:
+            return f"❌ Could not find an email matching '{raw}'. Reply `/emails` to see available messages in your inbox."
+
+        risk_str = "🟢 Safe / Verified" if matched_email.phishing_risk.value == "LOW" else f"⚠️ Warning [{matched_email.phishing_risk.value}]"
+        clean_body = matched_email.body.strip()
+        if len(clean_body) > 1500:
+            clean_body = clean_body[:1490] + "\n... [truncated for mobile display]"
+
+        reply_proposal = ""
+        if matched_email.proposed_reply and not matched_email.proposed_reply.startswith("[SECURITY ALERT]"):
+            reply_proposal = (
+                f"\n\n🤖 *AI Suggested Reply Draft:*\n"
+                f"```\n{matched_email.proposed_reply}\n```\n"
+                f"👉 To stage this reply for sending, reply: `/reply {matched_email.id[:8]}`"
+            )
+
+        return (
+            f"📧 *EMAIL DETAILS [{matched_email.id[:8]}]*\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"• *From:* {matched_email.sender}\n"
+            f"• *Subject:* {matched_email.subject}\n"
+            f"• *Date:* {matched_email.received_at[:19]}\n"
+            f"• *Security Status:* {risk_str}\n"
+            f"• *Intent:* `{matched_email.detected_intent.value}`\n\n"
+            f"📄 *Full Message Body:*\n"
+            f"─────────────────────────\n"
+            f"{clean_body}\n"
+            f"─────────────────────────"
+            f"{reply_proposal}"
+        )
+
+    if cmd.startswith("/reply ") or cmd.startswith("reply to email "):
+        raw = clean_text
+        pfx = "/reply " if cmd.startswith("/reply ") else "reply to email "
+        target = raw[len(pfx):].strip()
+        matched = mcp_service.get_email_by_identifier(target)
+        if not matched:
+            return f"❌ Could not find email matching '{target}'. Reply `/emails` to see your inbox."
+        
+        reply_body = matched.proposed_reply or (
+            f"Dear Hiring Team,\n\n"
+            f"Thank you for contacting me. I am very interested and would appreciate discussing next steps.\n\n"
+            f"Best regards,\n{profile.full_name}\nB.Tech Computer Science (AI)"
+        )
+        appr = audit_service.create_approval_request(
+            title=f"Send Email Reply to {matched.sender}",
+            description=f"Authorized email response for: {matched.subject}",
+            action_payload={
+                "action_type": "GMAIL_SEND",
+                "recipient": matched.sender,
+                "subject": f"Re: {matched.subject}",
+                "body": reply_body
+            },
+            risk_level=RiskLevelEnum.MEDIUM
+        )
+        return format_permission_request(
+            approval_id=appr.id,
+            action_type="GMAIL_SEND",
+            title=f"Send Email to {matched.sender}",
+            description=f"Outbound reply to {matched.subject}",
+            payload_preview=f"To: {matched.sender}\nSubject: Re: {matched.subject}\n\nBody:\n{reply_body}",
+            risk_level="MEDIUM",
+            platform=platform
+        )
 
     if cmd in ("/linkedin", "linkedin", "sync linkedin", "linkedin link", "linkedin links", "check linkedin", "linkedin status", "linkedin updates", "/li"):
         res = mcp_service.sync_linkedin_activity_via_mcp(limit=3)
@@ -596,6 +700,30 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         user_profile=profile,
         autonomy_mode=settings.AUTONOMY_MODE
     )
+
+    # Context Augmentation: Dynamically inject relevant live domain data
+    # A. Live Email Context if user mentions email, mail, inbox, or communications
+    if any(k in cmd for k in ("email", "mail", "gmail", "inbox", "message", "recruiter", "apple", "unstop", "interview", "application")):
+        try:
+            live_emails = mcp_service.get_active_inbox_emails(limit=4, sync_live=False)
+            if live_emails:
+                email_grounding = "\n\n=== RECENT LIVE EMAILS IN MOHIL'S INBOX ===\n"
+                for i, em in enumerate(live_emails, 1):
+                    email_grounding += f"Email {i}: From: {em.sender} | Subject: {em.subject} | Date: {em.received_at[:10]}\nContent Snippet: {em.body[:220].strip()}\n"
+                system_prompt += email_grounding
+        except Exception:
+            pass
+
+    # B. Live Attendance & Academic Context if user mentions college, attendance, absent, classes, or assignments
+    if any(k in cmd for k in ("attendance", "absent", "present", "class", "college", "subject", "assignment", "homework", "marks")):
+        try:
+            att_sum = academic_service.get_attendance_summary()
+            sub_strs = [f"{s.subject}: {s.percentage}% ({s.attended}/{s.total_classes})" for s in att_sum.subjects]
+            academic_grounding = f"\n\n=== MOHIL'S LIVE ACADEMIC & ATTENDANCE DATA ===\nOverall Attendance: {att_sum.overall_percentage}% ({'Safe' if att_sum.is_safe else 'Critical Alert <75%'})\nSubjects: {', '.join(sub_strs)}\n"
+            system_prompt += academic_grounding
+        except Exception:
+            pass
+
     history = get_conversation_history(sender_id)
     ai_response = llm_service.generate_completion(
         prompt=clean_text,
@@ -603,7 +731,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         conversation_history=history,
         task_type="general",
         max_tokens=400,
-        temperature=0.7
+        temperature=0.6
     )
     final_reply = ai_response or llm_service.generate_contextual_fallback(clean_text, candidate_name=profile.full_name)
     
@@ -812,6 +940,10 @@ async def run_continuous_telegram_poller():
                 url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getUpdates"
                 params = {"offset": _LAST_TELEGRAM_OFFSET, "timeout": 8}
                 resp = await client.get(url, params=params)
+                if resp.status_code == 409:
+                    logger.debug("Telegram 409 Conflict: another instance (e.g. Render cloud) is active. Backing off 6s...")
+                    await asyncio.sleep(6.0)
+                    continue
                 if resp.status_code == 200:
                     data = resp.json()
                     updates = data.get("result", [])

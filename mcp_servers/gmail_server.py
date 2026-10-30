@@ -14,6 +14,7 @@ Supports:
 """
 import os
 import sys
+import re
 import json
 import uuid
 import imaplib
@@ -110,6 +111,23 @@ SANDBOX_EMAILS = [
     }
 ]
 
+def _clean_html_to_text(html_content: str) -> str:
+    """Converts HTML email bodies into clean, human-readable plain text."""
+    if not html_content:
+        return ""
+    # Remove script and style tags
+    clean = re.sub(r"<(script|style).*?</\1>", "", html_content, flags=re.DOTALL | re.IGNORECASE)
+    # Replace block level elements and line breaks with newlines
+    clean = re.sub(r"<br\s*/?>|</p>|</div>|</tr>|</li>", "\n", clean, flags=re.IGNORECASE)
+    # Strip remaining HTML tags
+    clean = re.sub(r"<[^>]+>", " ", clean)
+    # Decode basic HTML entities
+    clean = clean.replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&#39;", "'")
+    # Normalize excessive whitespace
+    clean = re.sub(r"[ \t]+", " ", clean)
+    clean = re.sub(r"\n\s*\n+", "\n\n", clean)
+    return clean.strip()
+
 def _decode_mime_header(header_value: Optional[str]) -> str:
     """Decodes MIME encoded header strings."""
     if not header_value:
@@ -124,6 +142,37 @@ def _decode_mime_header(header_value: Optional[str]) -> str:
         else:
             decoded_fragments.append(str(fragment))
     return "".join(decoded_fragments)
+
+def _extract_email_body(msg: email.message.Message) -> str:
+    """Extracts clean text body from email message, falling back cleanly to HTML extraction."""
+    body = ""
+    html_fallback = ""
+    if msg.is_multipart():
+        for subpart in msg.walk():
+            c_type = subpart.get_content_type()
+            c_disp = str(subpart.get("Content-Disposition"))
+            if "attachment" in c_disp:
+                continue
+            if c_type == "text/plain" and not body:
+                payload = subpart.get_payload(decode=True)
+                if payload:
+                    body = payload.decode(subpart.get_content_charset() or "utf-8", errors="replace")
+            elif c_type == "text/html" and not html_fallback:
+                payload = subpart.get_payload(decode=True)
+                if payload:
+                    html_fallback = payload.decode(subpart.get_content_charset() or "utf-8", errors="replace")
+    else:
+        payload = msg.get_payload(decode=True)
+        if payload:
+            raw_text = payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
+            if msg.get_content_type() == "text/html":
+                html_fallback = raw_text
+            else:
+                body = raw_text
+
+    if not body.strip() and html_fallback.strip():
+        body = _clean_html_to_text(html_fallback)
+    return body.strip()
 
 def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, Any]]:
     """Fetches real unread emails from Gmail via SSL IMAP."""
@@ -161,21 +210,8 @@ def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, A
                     sender = _decode_mime_header(msg.get("From", "unknown"))
                     date_str = msg.get("Date", "")
                     
-                    # Extract plain text body
-                    body = ""
-                    if msg.is_multipart():
-                        for subpart in msg.walk():
-                            c_type = subpart.get_content_type()
-                            c_disp = str(subpart.get("Content-Disposition"))
-                            if c_type == "text/plain" and "attachment" not in c_disp:
-                                payload = subpart.get_payload(decode=True)
-                                if payload:
-                                    body = payload.decode(subpart.get_content_charset() or "utf-8", errors="replace")
-                                    break
-                    else:
-                        payload = msg.get_payload(decode=True)
-                        if payload:
-                            body = payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
+                    # Extract body with full HTML fallback support
+                    body = _extract_email_body(msg)
                             
                     results.append({
                         "id": f"imap_{e_id.decode('utf-8', errors='ignore')}",
@@ -250,20 +286,7 @@ def read_email(message_id: str) -> str:
                         subject = _decode_mime_header(msg.get("Subject", "(No Subject)"))
                         sender = _decode_mime_header(msg.get("From", "unknown"))
                         date_str = msg.get("Date", "")
-                        body = ""
-                        if msg.is_multipart():
-                            for subpart in msg.walk():
-                                c_type = subpart.get_content_type()
-                                c_disp = str(subpart.get("Content-Disposition"))
-                                if c_type == "text/plain" and "attachment" not in c_disp:
-                                    payload = subpart.get_payload(decode=True)
-                                    if payload:
-                                        body = payload.decode(subpart.get_content_charset() or "utf-8", errors="replace")
-                                        break
-                        else:
-                            payload = msg.get_payload(decode=True)
-                            if payload:
-                                body = payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
+                        body = _extract_email_body(msg)
                         try:
                             mail.close()
                             mail.logout()

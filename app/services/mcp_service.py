@@ -11,6 +11,7 @@ Features:
 """
 import json
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
@@ -26,6 +27,8 @@ from app.services.audit_service import get_approval, ApprovalStatusEnum, RiskLev
 
 # Import MCP server tool interfaces directly
 from mcp_servers import gmail_server, linkedin_server
+
+logger = logging.getLogger(__name__)
 
 def get_mcp_system_status() -> MCPStatusResponse:
     """Returns the live connection health and mode of Gmail and LinkedIn MCP servers."""
@@ -109,6 +112,47 @@ def sync_unread_emails_via_mcp(limit: int = 10, query: str = "") -> MCPEmailSync
         status="SUCCESS",
         message=f"Successfully synced {len(synced_items)} new emails via Gmail MCP server."
     )
+
+def get_active_inbox_emails(limit: int = 5, sync_live: bool = True) -> List[EmailMessageResponse]:
+    """
+    Syncs latest emails from Gmail MCP and returns the top active emails from SQLite.
+    Always provides live email data even if previously synced.
+    """
+    if sync_live:
+        try:
+            sync_unread_emails_via_mcp(limit=limit)
+        except Exception as e:
+            logger.warning("Live Gmail sync background note: %s", str(e))
+
+    return communication_service.list_email_messages(limit=limit)
+
+def get_email_by_identifier(query: str, limit: int = 25) -> Optional[EmailMessageResponse]:
+    """
+    Retrieves an email by 1-based index (e.g. '1', '2'), short ID prefix,
+    or keyword search across subject and sender.
+    """
+    clean_q = query.strip().lower()
+    emails = communication_service.list_email_messages(limit=limit)
+    if not emails:
+        return None
+
+    # 1. Check if query is 1-based index
+    if clean_q.isdigit():
+        idx = int(clean_q) - 1
+        if 0 <= idx < len(emails):
+            return emails[idx]
+
+    # 2. Check if query matches ID or short ID prefix
+    for e in emails:
+        if e.id.lower().startswith(clean_q) or (e.external_id and e.external_id.lower().startswith(clean_q)):
+            return e
+
+    # 3. Fuzzy search in subject or sender
+    for e in emails:
+        if clean_q in e.subject.lower() or clean_q in e.sender.lower():
+            return e
+
+    return None
 
 def sync_linkedin_activity_via_mcp(limit: int = 10) -> MCPLinkedInSyncResponse:
     """
