@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "Meiyon"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
-    HOST: str = "127.0.0.1"
-    PORT: int = 8000
+    HOST: str = os.environ.get("HOST", "0.0.0.0")
+    PORT: int = int(os.environ.get("PORT", "8000"))
     
     # Storage
     DB_PATH: Path = DATA_DIR / "manager.db"

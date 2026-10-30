@@ -14,3 +14,42 @@ services:
         value: "SUPERVISED"
       - key: TIMEZONE
         value: "Asia/Kolkata"
+      - key: HOST
+        value: "0.0.0.0"
+      # Telegram Bot (set these in Render Dashboard > Environment)
+      - key: TELEGRAM_ENABLED
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_ALLOWED_CHAT_ID
+        sync: false
+      # AI Provider Keys (set in Render Dashboard > Environment)
+      - key: AI_PROVIDER
+        sync: false
+      - key: NVIDIA_BASE_URL
+        sync: false
+      - key: NVIDIA_REASONING_KEY
+        sync: false
+      - key: NVIDIA_GENERAL_KEY
+        sync: false
+      - key: NVIDIA_VISION_KEY
+        sync: false
+      - key: NVIDIA_OCR_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # Gmail MCP
+      - key: GMAIL_ADDRESS
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      # LinkedIn MCP
+      - key: LINKEDIN_LI_AT_COOKIE
+        sync: false
+      # WhatsApp / Twilio (optional)
+      - key: WHATSAPP_ENABLED
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false

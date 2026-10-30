@@ -1,4 +1,5 @@
 """Main FastAPI Application Entrypoint."""
+import os
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -28,6 +29,25 @@ logger = logging.getLogger("PersonalAIManager")
 
 scheduler = BackgroundScheduler(daemon=True)
 
+
+def _keep_alive_ping():
+    """Self-ping to prevent Render/Railway free tier from sleeping.
+    Hits the local health endpoint every 10 minutes so the platform
+    sees activity and keeps the service alive 24/7."""
+    import httpx
+    render_url = os.environ.get("RENDER_EXTERNAL_URL")
+    if render_url:
+        ping_url = f"{render_url}/api/webhooks/status"
+    else:
+        ping_url = f"http://127.0.0.1:{settings.PORT}/api/webhooks/status"
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            resp = client.get(ping_url)
+            logger.debug("Keep-alive ping: %s -> %d", ping_url, resp.status_code)
+    except Exception as e:
+        logger.debug("Keep-alive ping failed (non-critical): %s", str(e))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure database is initialized
@@ -42,6 +62,10 @@ async def lifespan(app: FastAPI):
     if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
         logger.info("Starting Telegram Bot polling engine...")
         scheduler.add_job(poll_telegram_updates_once, "interval", seconds=3, id="telegram_poll", replace_existing=True)
+
+    # Keep-alive self-ping every 10 minutes to prevent free-tier sleep
+    logger.info("Starting keep-alive pinger (every 10 min) for 24/7 uptime...")
+    scheduler.add_job(_keep_alive_ping, "interval", minutes=10, id="keep_alive", replace_existing=True)
 
     scheduler.start()
     

@@ -1,4 +1,5 @@
 """System administration, backup/restore, and health endpoints."""
+import time
 from pathlib import Path
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
@@ -9,17 +10,27 @@ from app.services import audit_service
 
 router = APIRouter(prefix="/api/system", tags=["System & Maintenance"])
 
+# Track server start time for uptime reporting
+_SERVER_START_TIME = time.time()
+
 class ModeUpdateRequest(BaseModel):
     mode: str  # ASSISTED, SUPERVISED, RESTRICTED_AUTONOMY
 
 @router.get("/health")
 def health_check():
+    uptime_seconds = int(time.time() - _SERVER_START_TIME)
+    hours, remainder = divmod(uptime_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    uptime_str = f"{hours}h {minutes}m {secs}s"
     return {
         "status": "healthy",
         "app_name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "autonomy_mode": settings.AUTONOMY_MODE,
-        "timezone": settings.TIMEZONE
+        "timezone": settings.TIMEZONE,
+        "uptime": uptime_str,
+        "uptime_seconds": uptime_seconds,
+        "telegram_polling": settings.TELEGRAM_ENABLED and bool(settings.TELEGRAM_BOT_TOKEN)
     }
 
 @router.post("/mode")
