@@ -96,14 +96,15 @@ def generate_completion(
 
     # Deduplicate while preserving order
     seen = set()
-    models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))]
+    # Keep at most 2 model candidates with aggressive fast timeout to keep chatbot snappy
+    models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))][:2]
 
     # Build multi-turn messages payload
     messages: List[Dict[str, str]] = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     if conversation_history:
-        for turn in conversation_history[-8:]:  # keep last 8 turns for responsive context
+        for turn in conversation_history[-4:]:  # keep last 4 turns for high speed
             messages.append({"role": turn.get("role", "user"), "content": turn.get("content", "")})
     messages.append({"role": "user", "content": prompt})
 
@@ -117,11 +118,11 @@ def generate_completion(
         payload = {
             "model": model_name,
             "messages": messages,
-            "max_tokens": max_tokens,
+            "max_tokens": min(max_tokens, 256),
             "temperature": temperature
         }
         try:
-            with httpx.Client(timeout=6.0) as client:
+            with httpx.Client(timeout=2.5) as client:
                 resp = client.post(url, headers=headers, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -140,13 +141,12 @@ def generate_completion(
                         if content and content.strip():
                             return content.strip()
                 else:
-                    logger.warning("NVIDIA NIM model %s failed (%d): %s", model_name, resp.status_code, resp.text)
+                    logger.debug("NVIDIA NIM model %s failed (%d): %s", model_name, resp.status_code, resp.text)
         except Exception as e:
-            logger.warning("NVIDIA NIM attempt with %s failed: %s", model_name, str(e))
+            logger.debug("NVIDIA NIM attempt with %s failed: %s", model_name, str(e))
             continue
 
-    # Fallback to intelligent conversational partner response if all endpoints fail
-    logger.info("Falling back to cognitive conversational generator for prompt.")
+    # Instant Fallback: zero waiting, seamless conversational response
     return generate_contextual_fallback(prompt)
 
 

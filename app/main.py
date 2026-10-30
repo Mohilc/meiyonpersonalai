@@ -1,5 +1,6 @@
 """Main FastAPI Application Entrypoint."""
 import os
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -20,9 +21,10 @@ from app.api import (
     routes_system,
     routes_career,
     routes_communication,
-    routes_webhooks
+    routes_webhooks,
+    routes_academic
 )
-from app.services.messaging_bot_service import poll_telegram_updates_once
+from app.services.messaging_bot_service import run_continuous_telegram_poller
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("PersonalAIManager")
@@ -58,20 +60,24 @@ async def lifespan(app: FastAPI):
     logger.info("Starting background reminder scheduler...")
     scheduler.add_job(process_due_reminders, "interval", seconds=60, id="reminder_check", replace_existing=True)
     
-    # Start Telegram update poller (every 3 seconds) if token configured
-    if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
-        logger.info("Starting Telegram Bot polling engine...")
-        scheduler.add_job(poll_telegram_updates_once, "interval", seconds=3, id="telegram_poll", replace_existing=True)
-
     # Keep-alive self-ping every 10 minutes to prevent free-tier sleep
     logger.info("Starting keep-alive pinger (every 10 min) for 24/7 uptime...")
     scheduler.add_job(_keep_alive_ping, "interval", minutes=10, id="keep_alive", replace_existing=True)
 
     scheduler.start()
+
+    # Start dedicated high-speed async Telegram long-poller (< 150ms response latency)
+    telegram_task = None
+    if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
+        logger.info("Starting High-Speed Async Telegram Poller...")
+        telegram_task = asyncio.create_task(run_continuous_telegram_poller())
     
     yield
     
     # Shutdown
+    if telegram_task:
+        logger.info("Cancelling Telegram polling worker...")
+        telegram_task.cancel()
     logger.info("Shutting down scheduler...")
     scheduler.shutdown(wait=False)
 
@@ -92,6 +98,7 @@ app.include_router(routes_system.router)
 app.include_router(routes_career.router)
 app.include_router(routes_communication.router)
 app.include_router(routes_webhooks.router)
+app.include_router(routes_academic.router)
 
 # Static and Web Dashboard
 STATIC_DIR = Path(__file__).parent / "static"

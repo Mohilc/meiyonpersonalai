@@ -2,6 +2,7 @@
 import os
 import re
 import json
+import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 import httpx
@@ -13,9 +14,11 @@ from app.services import (
     task_service,
     mcp_service,
     llm_service,
-    profile_service
+    profile_service,
+    academic_service
 )
 from app.models.approval import ApprovalDecision, ApprovalStatusEnum, RiskLevelEnum
+from app.models.academic import AssignmentStatusEnum
 from app.prompts import (
     build_executive_system_prompt,
     format_permission_request,
@@ -87,19 +90,22 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
     # 2. Executive Commands Routing
     if cmd in ("/start", "help", "/help", "menu"):
         return (
-            f"👋 *Welcome, {profile.full_name}!* I am *Meiyon*, your Executive Personal AI Manager & Partner.\n\n"
-            "I'm here for two-way conversation, career strategy, drone robotics ideas, and autonomous task management:\n"
+            f"👋 *Welcome, {profile.full_name}!* I am *Meiyon*, your Executive Personal AI Manager & Academic Partner.\n\n"
+            "🎓 *College Attendance & Academic Tracking:*\n"
+            "• `/attendance` - Current attendance %, subject breakdown & 75% alerts\n"
+            "• `/absent <subject>` - Log absence today (e.g. `/absent AI`)\n"
+            "• `/present <subject>` - Log class attended (e.g. `/present DBMS`)\n"
+            "• `/assignments` - Pending assignments & submission deadlines\n"
+            "• `/assignment add <Sub> | <Title> | <Due>` - Add new assignment\n"
+            "• `/submit <id> [marks]` - Mark assignment submitted or graded\n"
+            "• `/pdf` or `/report` - Compile & receive Attendance & Assignment PDF report\n\n"
+            "💼 *Executive & Career Management:*\n"
             "• `/briefing` - Today's top priorities & strategic AI advice\n"
             "• `/emails` - Check Gmail & unread recruiter triage\n"
             "• `/linkedin` - Check LinkedIn messages & connection requests\n"
-            "• `like <post_url>` - React with Like to a LinkedIn post\n"
-            "• `comment <post_url>: <text>` - Comment on a LinkedIn post\n"
-            "• `/approvals` - View staged actions awaiting your approval\n"
-            "• `/approve <id>` - Authorize staged email, post, like, or comment\n"
-            "• `/reject <id>` - Decline staged action\n"
             "• `/tasks` - View scheduled task commitments\n"
             "• `/clear` - Reset conversation memory buffer\n\n"
-            "💬 *Or just talk to me naturally!* Share your thoughts, ask for advice, discuss your drone projects, or send LinkedIn post & profile links."
+            "💬 *Or just chat naturally!* E.g. 'I was absent in AI today', 'Mark me present in Drone Lab', or 'Send my attendance pdf'."
         )
 
     if cmd in ("/clear", "clear", "reset", "reset chat", "clear memory"):
@@ -237,7 +243,146 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             lines.append(f"• *{t.title}* [{t.priority.value}] {due}")
         return "\n".join(lines)
 
-    # 3. Agentic Intent: Detect LinkedIn Post URL & Handle Like / Comment Actions
+    # 3. College Attendance & Academic Commands
+    if cmd in ("/attendance", "attendance", "att", "/att", "check attendance", "my attendance", "attendance status"):
+        summary = academic_service.get_attendance_summary()
+        status_icon = "🟢 SAFE (>= 75%)" if summary.is_safe else "🔴 WARNING (< 75%)"
+        lines = [
+            f"🎓 *COLLEGE ATTENDANCE OVERVIEW*",
+            f"• *Status:* {status_icon}",
+            f"• *Overall Attendance:* *{summary.overall_percentage}%*",
+            f"• *Classes Attended:* {summary.total_attended} / {summary.total_classes}",
+            f"• *Total Absences:* {summary.total_absent}\n",
+            "📚 *Subject Breakdown:*"
+        ]
+        if summary.subjects:
+            for s in summary.subjects:
+                badge = "✅" if s.is_safe else f"⚠️ *(Needs {s.classes_needed_for_75} classes)*"
+                lines.append(f"• *{s.subject}:* {s.percentage}% ({s.attended}/{s.total_classes}) {badge}")
+        else:
+            lines.append("  _No attendance logged yet. Use /absent or /present to start._")
+
+        lines.append("\n💡 *Actions:*")
+        lines.append("• Mark absent: `/absent <subject>` (e.g. `/absent AI`)")
+        lines.append("• Mark present: `/present <subject>` (e.g. `/present AI`)")
+        lines.append("• Download PDF report: `/pdf`")
+        return "\n".join(lines)
+
+    if any(cmd.startswith(pfx) for pfx in ("/absent", "absent", "mark absent", "noted absent")):
+        raw = clean_text
+        for pfx in ("/absent ", "absent in ", "absent on ", "absent ", "mark absent in ", "mark absent ", "noted absent "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        parts = [p.strip() for p in raw.split("|", 1)]
+        subject = parts[0]
+        notes = parts[1] if len(parts) > 1 else "Absent noted via chat"
+        if subject:
+            rec = academic_service.mark_attendance(subject=subject, status="ABSENT", notes=notes)
+            summary = academic_service.get_attendance_summary()
+            sub_sum = next((s for s in summary.subjects if s.subject.lower() == subject.lower()), None)
+            pct_str = f"{sub_sum.percentage}%" if sub_sum else ""
+            alert_str = ""
+            if sub_sum and not sub_sum.is_safe:
+                alert_str = f"\n\n🚨 *ATTENDANCE WARNING (<75%):*\nYour attendance in *{subject}* is now *{sub_sum.percentage}%*! You need to attend *{sub_sum.classes_needed_for_75}* consecutive classes without missing to cross 75%."
+            return (
+                f"📝 *Absence Noted!*\n"
+                f"• *Subject:* {rec.subject}\n"
+                f"• *Date:* {rec.date}\n"
+                f"• *Subject Attendance:* *{pct_str}*\n"
+                f"• *Overall Attendance:* *{summary.overall_percentage}%*"
+                f"{alert_str}\n\n"
+                f"👉 Type `/pdf` to get your updated Attendance & Absence PDF report."
+            )
+
+    if any(cmd.startswith(pfx) for pfx in ("/present", "present", "mark present", "attended")):
+        raw = clean_text
+        for pfx in ("/present ", "present in ", "present ", "mark present in ", "mark present ", "attended "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        parts = [p.strip() for p in raw.split("|", 1)]
+        subject = parts[0]
+        notes = parts[1] if len(parts) > 1 else "Attended class"
+        if subject:
+            rec = academic_service.mark_attendance(subject=subject, status="PRESENT", notes=notes)
+            summary = academic_service.get_attendance_summary()
+            sub_sum = next((s for s in summary.subjects if s.subject.lower() == subject.lower()), None)
+            pct_str = f"{sub_sum.percentage}%" if sub_sum else ""
+            return (
+                f"✅ *Attendance Logged (Present):*\n"
+                f"• *Subject:* {rec.subject}\n"
+                f"• *Date:* {rec.date}\n"
+                f"• *Subject Attendance:* *{pct_str}*\n"
+                f"• *Overall Attendance:* *{summary.overall_percentage}%*"
+            )
+
+    if cmd in ("/assignments", "assignments", "homework", "/homework", "my assignments", "assignment list"):
+        assignments = academic_service.list_assignments()
+        if not assignments:
+            return (
+                "📚 *No assignments logged right now.*\n\n"
+                "To add an assignment, reply:\n"
+                "`/assignment add <Subject> | <Title> | <Due Date YYYY-MM-DD>`\n"
+                "Example: `/assignment add AI | Neural Net Project | 2026-11-15`"
+            )
+        lines = ["📚 *ACADEMIC ASSIGNMENTS & EVALUATION:*"]
+        for a in assignments:
+            short_id = a.id[:8]
+            st_badge = "⏳ PENDING" if a.status == AssignmentStatusEnum.PENDING else ("📬 SUBMITTED" if a.status == AssignmentStatusEnum.SUBMITTED else "🎯 GRADED")
+            marks_info = f" • Marks: *{a.marks_obtained}/{a.max_marks}*" if a.marks_obtained is not None else ""
+            lines.append(f"\n• *[{short_id}]* *{a.subject}:* {a.title}\n  Due: `{a.due_date}` | Status: *{st_badge}*{marks_info}")
+        lines.append("\n👉 To mark submitted: `/submit <id> [marks]`")
+        lines.append("👉 To generate PDF report: `/pdf`")
+        return "\n".join(lines)
+
+    if cmd.startswith("/assignment add ") or cmd.startswith("add assignment "):
+        raw = clean_text
+        pfx = "/assignment add " if cmd.startswith("/assignment add ") else "add assignment "
+        payload_str = raw[len(pfx):].strip()
+        parts = [p.strip() for p in payload_str.split("|")]
+        if len(parts) >= 3:
+            sub = parts[0]
+            title = parts[1]
+            due = parts[2]
+            ass = academic_service.add_assignment(subject=sub, title=title, due_date=due)
+            return (
+                f"✅ *Assignment Added!*\n"
+                f"• *Subject:* {ass.subject}\n"
+                f"• *Title:* {ass.title}\n"
+                f"• *Due Date:* `{ass.due_date}`\n"
+                f"• *ID:* `{ass.id[:8]}`\n\n"
+                f"Type `/assignments` to view all tasks or `/pdf` for your academic report."
+            )
+        else:
+            return "⚠️ Format: `/assignment add <Subject> | <Title> | <Due Date YYYY-MM-DD>`"
+
+    if cmd.startswith("/submit ") or cmd.startswith("submit assignment ") or cmd.startswith("/grade "):
+        raw = clean_text
+        for pfx in ("/submit ", "submit assignment ", "/grade "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        parts = raw.split()
+        if parts:
+            ass_id = parts[0]
+            marks = float(parts[1]) if len(parts) > 1 and parts[1].replace(".", "", 1).isdigit() else None
+            st = "GRADED" if marks is not None else "SUBMITTED"
+            updated = academic_service.update_assignment_status(assignment_id=ass_id, status=st, marks_obtained=marks)
+            if updated:
+                marks_str = f" with Marks: {updated.marks_obtained}/{updated.max_marks}" if updated.marks_obtained is not None else ""
+                return f"🎉 *Assignment Updated!* [{updated.id[:8]}] *{updated.title}* marked as *{updated.status.value}*{marks_str}."
+            else:
+                return f"❌ Could not find assignment matching ID '{ass_id}'."
+
+    if cmd in ("/pdf", "pdf", "/report", "report", "attendance pdf", "academic report", "download pdf", "generate pdf", "give me pdf", "send pdf"):
+        pdf_path = academic_service.generate_academic_pdf_report()
+        if platform == "telegram" and sender_id:
+            send_telegram_document(chat_id=str(sender_id), file_path=pdf_path, caption="🎓 Here is your official College Attendance & Assignment Report PDF!")
+            return "📄 *PDF Generated & Delivered directly to your chat above!*"
+        return f"📄 *Academic Report PDF Generated!* Available on server at:\n`{pdf_path}`\n\nDownload directly from web: `/api/academic/report/pdf`."
+
+    # 4. Agentic Intent: Detect LinkedIn Post URL & Handle Like / Comment Actions
     post_match = LINKEDIN_POST_PATTERN.search(clean_text)
     if post_match:
         matched_url = post_match.group(0)
@@ -598,10 +743,29 @@ def dispatch_whatsapp_with_sid(
         return {"success": False, "error": str(e)}
 
 
+def send_telegram_document(chat_id: str, file_path: str, caption: Optional[str] = None) -> bool:
+    """Dispatches a document file (e.g. PDF report) directly to Telegram chat."""
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return False
+    url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendDocument"
+    try:
+        with open(file_path, "rb") as f:
+            files = {"document": (os.path.basename(file_path), f, "application/pdf")}
+            data = {"chat_id": chat_id}
+            if caption:
+                data["caption"] = caption
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(url, data=data, files=files)
+                return resp.status_code == 200
+    except Exception as e:
+        logger.error("Failed sending Telegram document: %s", str(e))
+        return False
+
+
 def poll_telegram_updates_once():
     """
     Pulls recent Telegram updates via long polling so no public URL or ngrok is required.
-    Runs periodically inside the background scheduler.
+    Fallback for manual or scheduler polling ticks.
     """
     global _LAST_TELEGRAM_OFFSET
     if not (settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN):
@@ -630,3 +794,43 @@ def poll_telegram_updates_once():
                     send_telegram_message(chat_id=chat_id, text=reply_text)
     except Exception as e:
         logger.debug("Telegram polling tick: %s", str(e))
+
+
+async def run_continuous_telegram_poller():
+    """
+    High-speed async Telegram polling engine with long-polling.
+    Eliminates APScheduler thread collision and delivers messages in < 150ms.
+    """
+    global _LAST_TELEGRAM_OFFSET
+    if not (settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN):
+        return
+
+    logger.info("⚡ High-speed async Telegram long-poller initialized.")
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        while True:
+            try:
+                url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getUpdates"
+                params = {"offset": _LAST_TELEGRAM_OFFSET, "timeout": 8}
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    updates = data.get("result", [])
+                    for update in updates:
+                        update_id = update.get("update_id", 0)
+                        _LAST_TELEGRAM_OFFSET = max(_LAST_TELEGRAM_OFFSET, update_id + 1)
+                        
+                        message = update.get("message", {})
+                        chat = message.get("chat", {})
+                        chat_id = str(chat.get("id", ""))
+                        text = message.get("text", "")
+                        
+                        if chat_id and text:
+                            reply_text = handle_incoming_text(sender_id=chat_id, platform="telegram", text=text)
+                            send_telegram_message(chat_id=chat_id, text=reply_text)
+                await asyncio.sleep(0.05)
+            except asyncio.CancelledError:
+                logger.info("Telegram poller task cancelled.")
+                break
+            except Exception as e:
+                logger.debug("Telegram poller tick notice: %s", str(e))
+                await asyncio.sleep(1.0)

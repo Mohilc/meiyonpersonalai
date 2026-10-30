@@ -203,6 +203,29 @@ def init_db():
             status TEXT NOT NULL DEFAULT 'PENDING',
             created_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS attendance_records (
+            id TEXT PRIMARY KEY,
+            subject TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PRESENT',
+            date TEXT NOT NULL,
+            period INTEGER NOT NULL DEFAULT 1,
+            notes TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS assignments (
+            id TEXT PRIMARY KEY,
+            subject TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            due_date TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            marks_obtained REAL,
+            max_marks REAL NOT NULL DEFAULT 100.0,
+            submitted_at TEXT,
+            created_at TEXT NOT NULL
+        );
         """)
 
         # Migration: Add external_id to email_messages if upgrading existing db
