@@ -69,3 +69,4 @@ class Assignment(BaseModel):
     max_marks: float
     submitted_at: Optional[str] = None
     created_at: str
+

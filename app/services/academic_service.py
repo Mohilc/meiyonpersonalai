@@ -530,3 +530,4 @@ def generate_academic_pdf_report(output_filename: Optional[str] = None) -> str:
     doc.build(story)
     logger.info("Academic PDF report generated successfully at: %s", str(pdf_path))
     return str(pdf_path)
+

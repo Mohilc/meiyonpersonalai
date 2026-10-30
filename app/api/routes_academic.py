@@ -85,3 +85,4 @@ def download_academic_pdf():
         media_type="application/pdf",
         filename=path_obj.name
     )
+

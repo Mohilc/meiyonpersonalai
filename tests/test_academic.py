@@ -79,3 +79,4 @@ def test_academic_api_endpoints():
     res2 = client.get("/api/academic/report/pdf")
     assert res2.status_code == 200
     assert res2.headers["content-type"] == "application/pdf"
+
