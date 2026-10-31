@@ -61,3 +61,4 @@ def submit_tone_feedback(payload: LearningFeedbackCreate):
 def view_compiled_prompt_context():
     """Returns the compiled self-learning instructions injected into AI prompts."""
     return {"prompt_instructions": learning_service.compile_learned_prompt_instructions()}
+

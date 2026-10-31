@@ -38,3 +38,4 @@ class LearningFeedbackCreate(BaseModel):
     user_feedback: str
     desired_tone: Optional[str] = None
     rating: Optional[int] = Field(default=None, ge=1, le=5)
+
