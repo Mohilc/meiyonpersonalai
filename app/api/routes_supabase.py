@@ -81,3 +81,4 @@ async def upload_file_to_supabase(
                 tmp_path.unlink()
             except Exception:
                 pass
+
