@@ -23,7 +23,8 @@ from app.api import (
     routes_communication,
     routes_webhooks,
     routes_academic,
-    routes_learning
+    routes_learning,
+    routes_supabase
 )
 from app.services.messaging_bot_service import run_continuous_telegram_poller
 
@@ -65,6 +66,25 @@ async def lifespan(app: FastAPI):
     logger.info("Starting keep-alive pinger (every 10 min) for 24/7 uptime...")
     scheduler.add_job(_keep_alive_ping, "interval", minutes=10, id="keep_alive", replace_existing=True)
 
+    # Supabase cloud persistence & auto-backup
+    from app.services import supabase_service
+    if supabase_service.is_configured():
+        logger.info("Supabase configured! Ensuring storage bucket '%s'...", settings.SUPABASE_STORAGE_BUCKET)
+        try:
+            supabase_service.ensure_bucket()
+        except Exception as e:
+            logger.warning("Supabase bucket check notice: %s", str(e))
+
+        if settings.SUPABASE_AUTO_SYNC:
+            logger.info("Scheduling automated Supabase database backups (every 6 hours)...")
+            scheduler.add_job(
+                supabase_service.backup_database_to_cloud,
+                "interval",
+                hours=6,
+                id="supabase_cloud_backup",
+                replace_existing=True
+            )
+
     scheduler.start()
 
     # Start dedicated high-speed async Telegram long-poller (< 150ms response latency)
@@ -101,6 +121,7 @@ app.include_router(routes_communication.router)
 app.include_router(routes_webhooks.router)
 app.include_router(routes_academic.router)
 app.include_router(routes_learning.router)
+app.include_router(routes_supabase.router)
 
 # Static and Web Dashboard
 STATIC_DIR = Path(__file__).parent / "static"

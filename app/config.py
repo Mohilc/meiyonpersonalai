@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     DB_PATH: Path = DATA_DIR / "manager.db"
     BACKUP_DIR: Path = DATA_DIR / "backups"
     
+    # Supabase Cloud Storage & Database Persistence
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "meiyon-storage"
+    SUPABASE_AUTO_SYNC: bool = True
+    
     # Timezone & Regional Defaults
     TIMEZONE: str = "Asia/Kolkata"
     

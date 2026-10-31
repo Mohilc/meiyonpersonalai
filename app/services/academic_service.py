@@ -529,5 +529,14 @@ def generate_academic_pdf_report(output_filename: Optional[str] = None) -> str:
 
     doc.build(story)
     logger.info("Academic PDF report generated successfully at: %s", str(pdf_path))
+
+    # Automatically synchronize PDF to Supabase Cloud Storage if configured
+    try:
+        from app.services import supabase_service
+        if supabase_service.is_configured():
+            supabase_service.upload_academic_pdf(str(pdf_path))
+    except Exception as e:
+        logger.debug("Supabase PDF cloud upload notice: %s", str(e))
+
     return str(pdf_path)
 

@@ -23,5 +23,8 @@ pytest>=8.3.0
 # Document & Report Generation
 reportlab>=4.0.0
 
+# Cloud Storage & Database Persistence (Supabase)
+supabase>=2.33.0
+
 # OS Specific
 pywin32>=306; sys_platform == 'win32'

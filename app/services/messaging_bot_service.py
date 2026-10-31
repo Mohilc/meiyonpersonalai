@@ -112,6 +112,10 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/remember <text>` - Teach me a new rule (e.g. `/remember Call me bro and be casual`)\n"
             "• `/forget <key/id>` - Delete an outdated learned rule\n"
             "• `/clear` - Reset conversation memory buffer\n\n"
+            "☁️ *Supabase Cloud Storage & Persistence:*\n"
+            "• `/supabase` - View Supabase cloud connection & stored files\n"
+            "• `/supabase backup` - Trigger instant cloud database backup to Supabase\n"
+            "• `/supabase restore` - Restore latest cloud database snapshot\n\n"
             "💬 *Or just chat naturally!* E.g. 'Be more friendly', 'Remember I have test on Friday', 'What emails do I have?', or 'Send my attendance pdf'."
         )
 
@@ -534,12 +538,66 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             else:
                 return f"❌ Could not find assignment matching ID '{ass_id}'."
 
+    if cmd.startswith("/supabase") or cmd.startswith("/storage"):
+        from app.services import supabase_service
+        parts = clean_text.split()
+        subcmd = parts[1].lower() if len(parts) > 1 else "status"
+
+        if subcmd == "backup":
+            res = supabase_service.backup_database_to_cloud()
+            if res and res.get("status") == "success":
+                return (
+                    f"☁️ *Supabase Cloud Backup Successful!*\n"
+                    f"• *Archive:* `{res['archive_path']}`\n"
+                    f"• *Latest Pointer:* `{res['latest_path']}`\n"
+                    f"• *Timestamp:* `{res['timestamp']}`\n\n"
+                    f"Your SQLite state is securely persisted in Supabase Storage!"
+                )
+            return "❌ *Supabase Backup Failed.* Please ensure `SUPABASE_URL` and `SUPABASE_KEY` are configured."
+
+        if subcmd == "restore":
+            success = supabase_service.restore_database_from_cloud()
+            if success:
+                return "✅ *Supabase Restore Completed!* Active database restored from latest cloud snapshot."
+            return "❌ *Supabase Restore Failed.* Check if cloud backup snapshot exists in bucket."
+
+        # Default: status
+        status = supabase_service.get_status()
+        if not status["configured"]:
+            return (
+                "☁️ *Supabase Cloud Storage:*\n"
+                "• *Status:* `Not Configured`\n"
+                "• *Target Bucket:* `meiyon-storage`\n\n"
+                "💡 To connect Supabase, set `SUPABASE_URL` and `SUPABASE_KEY` in your environment or Render environment variables!"
+            )
+        conn_str = "🟢 Connected" if status.get("connected") else "🔴 Disconnected"
+        files = supabase_service.list_files()
+        file_count = len(files)
+        return (
+            f"☁️ *Supabase Cloud Storage & Persistence:*\n"
+            f"• *Status:* {conn_str}\n"
+            f"• *URL:* `{status.get('supabase_url')}`\n"
+            f"• *Bucket:* `{status.get('storage_bucket')}`\n"
+            f"• *Stored Objects:* `{file_count}`\n\n"
+            f"💡 *Commands:* Reply `/supabase backup` to snapshot database, or `/supabase restore` to pull latest."
+        )
+
     if cmd in ("/pdf", "pdf", "/report", "report", "attendance pdf", "academic report", "download pdf", "generate pdf", "give me pdf", "send pdf"):
         pdf_path = academic_service.generate_academic_pdf_report()
+        cloud_url_note = ""
+        try:
+            from app.services import supabase_service
+            if supabase_service.is_configured():
+                cloud_res = supabase_service.upload_academic_pdf(pdf_path)
+                if cloud_res and cloud_res.get("public_url"):
+                    cloud_url_note = f"\n☁️ *Supabase Cloud Link:* [Download PDF]({cloud_res['public_url']})"
+        except Exception:
+            pass
+
         if platform == "telegram" and sender_id:
-            send_telegram_document(chat_id=str(sender_id), file_path=pdf_path, caption="🎓 Here is your official College Attendance & Assignment Report PDF!")
-            return "📄 *PDF Generated & Delivered directly to your chat above!*"
-        return f"📄 *Academic Report PDF Generated!* Available on server at:\n`{pdf_path}`\n\nDownload directly from web: `/api/academic/report/pdf`."
+            send_telegram_document(chat_id=str(sender_id), file_path=pdf_path, caption=f"🎓 Here is your official College Attendance & Assignment Report PDF!{cloud_url_note}")
+            return f"📄 *PDF Generated & Delivered directly to your chat above!*{cloud_url_note}"
+        return f"📄 *Academic Report PDF Generated!* Available on server at:\n`{pdf_path}`{cloud_url_note}\n\nDownload directly from web: `/api/academic/report/pdf`."
 
     # 4. Agentic Intent: Detect LinkedIn Post URL & Handle Like / Comment Actions
     post_match = LINKEDIN_POST_PATTERN.search(clean_text)
