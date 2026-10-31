@@ -215,6 +215,13 @@ def build_executive_system_prompt(
         skills = "Python, FastAPI, Autonomous Agents, LLM Systems, PyTorch, Model Context Protocol"
         interests = "Agentic AI, Applied Deep Learning, Enterprise AI Infrastructure"
 
+    # Dynamic Self-Learned User Persona & Memory Injection
+    try:
+        from app.services import learning_service
+        learned_block = learning_service.compile_learned_prompt_instructions()
+    except Exception:
+        learned_block = ""
+
     system_prompt = f"""You are {AI_ASSISTANT_NAME}, the Executive Personal AI Manager for {name}.
 Target Channel: {platform_clean.upper()}
 
@@ -238,6 +245,8 @@ and daily task execution.
 {RESPONSE_INSTRUCTIONS}
 
 {TWO_WAY_CONVERSATION_INSTRUCTIONS}
+
+{learned_block}
 
 {HITL_PERMISSION_INSTRUCTIONS}
 

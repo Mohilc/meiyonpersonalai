@@ -15,7 +15,8 @@ from app.services import (
     mcp_service,
     llm_service,
     profile_service,
-    academic_service
+    academic_service,
+    learning_service
 )
 from app.models.approval import ApprovalDecision, ApprovalStatusEnum, RiskLevelEnum
 from app.models.academic import AssignmentStatusEnum
@@ -105,10 +106,64 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/email <1-5>` - Read full email body & details\n"
             "• `/reply <1-5>` - Stage AI email response with approval gate\n"
             "• `/linkedin` - Check LinkedIn messages & connection requests\n"
-            "• `/tasks` - View scheduled task commitments\n"
+            "• `/tasks` - View scheduled task commitments\n\n"
+            "🧠 *Self-Learning & Adaptive Persona:*\n"
+            "• `/memory` - View everything I've learned about your habits & style\n"
+            "• `/remember <text>` - Teach me a new rule (e.g. `/remember Call me bro and be casual`)\n"
+            "• `/forget <key/id>` - Delete an outdated learned rule\n"
             "• `/clear` - Reset conversation memory buffer\n\n"
-            "💬 *Or just chat naturally!* E.g. 'What emails do I have?', 'Read email 1', 'I was absent in AI today', or 'Send my attendance pdf'."
+            "💬 *Or just chat naturally!* E.g. 'Be more friendly', 'Remember I have test on Friday', 'What emails do I have?', or 'Send my attendance pdf'."
         )
+
+    if cmd in ("/memory", "/learned", "memory", "learned", "my memory", "what have you learned"):
+        mems = learning_service.list_active_memories()
+        if not mems:
+            return (
+                "🧠 *Self-Learning Memory Bank:*\n"
+                "I haven't learned specific custom rules yet!\n\n"
+                "💡 *Teach me anytime by replying:*\n"
+                "• `/remember I prefer a warm, casual tone with emojis`\n"
+                "• `/remember Call me bro`\n"
+                "• Or just talk to me naturally—I automatically learn your preferences!"
+            )
+        lines = [
+            f"🧠 *MEIYON'S LEARNED MEMORY & ADAPTIVE PERSONA*",
+            f"• *Learned Rules:* {len(mems)} active memories\n"
+        ]
+        for idx, m in enumerate(mems, 1):
+            short_id = m.id[:8]
+            lines.append(f"*{idx}.* `[{m.category.value}]` *{m.key}:*\n   _{m.content}_\n   (ID: `{short_id}`)")
+        lines.append("\n💡 *Actions:* Reply `/remember <text>` to teach me more, or `/forget <id>` to remove one.")
+        return "\n".join(lines)
+
+    if cmd.startswith("/remember ") or cmd.startswith("/learn ") or cmd.startswith("remember: "):
+        raw = clean_text
+        for pfx in ("/remember ", "/learn ", "remember: "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        if raw:
+            key_slug = re.sub(r"[^a-z0-9_]+", "_", raw[:25].lower()).strip("_")
+            mem = learning_service.add_or_update_memory(
+                category="PREFERENCE",
+                key=f"user_{key_slug}",
+                content=raw,
+                source="EXPLICIT_USER_COMMAND"
+            )
+            return (
+                f"✨ *Learned & Saved to Memory!*\n"
+                f"• *Learned:* _\"{mem.content}\"_\n"
+                f"• *Category:* `{mem.category.value}`\n\n"
+                f"I've updated my internal persona and will follow this in our conversations from now on! 😊"
+            )
+
+    if cmd.startswith("/forget "):
+        target = clean_text[len("/forget "):].strip()
+        success = learning_service.deactivate_memory(target)
+        if success:
+            return f"🧹 *Memory Removed:* I've forgotten `{target}`."
+        else:
+            return f"❌ Could not find an active memory matching `{target}`. Type `/memory` to view learned rules."
 
     if cmd in ("/clear", "clear", "reset", "reset chat", "clear memory"):
         clear_conversation_history(sender_id)
@@ -694,7 +749,14 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
                 platform=platform
             )
 
-    # 5. Natural Language Reasoning & Two-Way Conversational Dialogue
+    # 5. Continuous Self-Learning: Detect behavioral feedback, style adjustments, or explicit memory instructions
+    learning_feedback = learning_service.extract_learnings_from_user_text(clean_text)
+    if learning_feedback:
+        reply = learning_feedback["acknowledgment"]
+        add_conversation_turn(sender_id, clean_text, reply)
+        return reply
+
+    # 6. Natural Language Reasoning & Two-Way Conversational Dialogue
     system_prompt = build_executive_system_prompt(
         platform=platform,
         user_profile=profile,

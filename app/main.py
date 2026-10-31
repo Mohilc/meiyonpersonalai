@@ -22,7 +22,8 @@ from app.api import (
     routes_career,
     routes_communication,
     routes_webhooks,
-    routes_academic
+    routes_academic,
+    routes_learning
 )
 from app.services.messaging_bot_service import run_continuous_telegram_poller
 
@@ -99,6 +100,7 @@ app.include_router(routes_career.router)
 app.include_router(routes_communication.router)
 app.include_router(routes_webhooks.router)
 app.include_router(routes_academic.router)
+app.include_router(routes_learning.router)
 
 # Static and Web Dashboard
 STATIC_DIR = Path(__file__).parent / "static"

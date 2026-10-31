@@ -9,22 +9,34 @@ logger = logging.getLogger(__name__)
 
 def generate_contextual_fallback(prompt: str, candidate_name: str = "Mohil") -> str:
     """
-    Generates an intelligent, warm conversational fallback response when
-    external LLM endpoints experience network latency or downtime.
-    Maintains authentic two-way dialogue rather than returning cold errors.
+    Generates an intelligent, warm, human-friendly conversational response
+    grounded in Mohil's profile, learned preferences, and domain context.
     """
     clean_p = prompt.strip().lower()
+    display_name = candidate_name
+
+    # Adapt dynamically to learned user preferences
+    try:
+        from app.services import learning_service
+        name_mem = learning_service.get_memory_by_key("preferred_name")
+        if name_mem and name_mem.content:
+            import re
+            m = re.search(r"Address the user as ([a-zA-Z0-9_\-]+)", name_mem.content)
+            if m:
+                display_name = m.group(1)
+    except Exception:
+        pass
     
     if any(w in clean_p for w in ("hi", "hello", "hey", "good morning", "good evening", "how are you", "what's up")):
         return (
-            f"Hey {candidate_name}! Great to hear from you. I'm right here by your side as your Chief of Staff.\n\n"
+            f"Hey {display_name}! Great to hear from you. I'm right here by your side as your executive partner and buddy.\n\n"
             f"How are things coming along with your classes at Mar Baselios Christian College and your drone engineering projects today? "
-            f"What's the top priority you'd like us to tackle together?"
+            f"What's on your mind—want to check your attendance, review emails, or brainstorm?"
         )
         
     if any(w in clean_p for w in ("tired", "exhausted", "stressed", "overwhelmed", "busy")):
         return (
-            f"I hear you, {candidate_name}. Balancing an intensive AI & Computer Science curriculum with cutting-edge drone robotics takes serious energy. "
+            f"I hear you, {display_name}. Balancing an intensive AI & Computer Science curriculum with cutting-edge drone robotics takes serious energy. "
             f"Remember that steady progress always compounds.\n\n"
             f"Why don't we take a quick breather and break down your immediate commitments into smaller chunks? "
             f"What is the single most demanding item on your desk right now?"
@@ -32,7 +44,7 @@ def generate_contextual_fallback(prompt: str, candidate_name: str = "Mohil") -> 
         
     if any(w in clean_p for w in ("drone", "uav", "telemetry", "yolo", "vision", "robotics")):
         return (
-            f"That's right up your alley in autonomous systems, {candidate_name}! "
+            f"That's right up your alley in autonomous systems, {display_name}! "
             f"Real-time computer vision and telemetry on edge hardware are challenging engineering frontiers.\n\n"
             f"What specific architecture or optimization are you looking at right now? "
             f"Are we looking to improve inference frame rate, minimize latency, or enhance tracking accuracy?"
@@ -43,7 +55,7 @@ def generate_contextual_fallback(prompt: str, candidate_name: str = "Mohil") -> 
             from app.services import mcp_service
             recent = mcp_service.get_active_inbox_emails(limit=3, sync_live=False)
             if recent:
-                lines = [f"📬 *Here are your latest active emails, {candidate_name}:*"]
+                lines = [f"📬 *Here are your latest active emails, {display_name}:*"]
                 for i, em in enumerate(recent, 1):
                     snip = em.body.replace("\n", " ").strip()
                     if len(snip) > 110:
@@ -72,15 +84,15 @@ def generate_contextual_fallback(prompt: str, candidate_name: str = "Mohil") -> 
 
     if any(w in clean_p for w in ("internship", "job", "career", "resume", "recruit", "interview")):
         return (
-            f"Career strategy is our core mission, {candidate_name}! "
+            f"Career strategy is our core mission, {display_name}! "
             f"Your profile in AI, FastAPI backend engineering, and autonomous robotics places you in a strong position for 2026/2027 technical cohorts.\n\n"
             f"Would you like to review unread recruiter inquiries via `/emails`, sync your `/linkedin` activity, or discuss targeting specific research labs?"
         )
         
     return (
-        f"I hear you, {candidate_name}. That's a thoughtful point to consider.\n\n"
-        f"As your Executive AI partner, I'm here to think through this with you. "
-        f"Could you tell me a bit more about what you're aiming for here, and what your preferred approach would be?"
+        f"I hear you, {display_name}! That makes total sense.\n\n"
+        f"As your personal AI partner, I'm right here to think through this with you. "
+        f"Tell me a bit more about what you're aiming for, or let me know if you want me to handle any tasks for you! 😊"
     )
 
 

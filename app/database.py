@@ -226,6 +226,18 @@ def init_db():
             submitted_at TEXT,
             created_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS learned_memories (
+            id TEXT PRIMARY KEY,
+            category TEXT NOT NULL,
+            key TEXT NOT NULL,
+            content TEXT NOT NULL,
+            source TEXT NOT NULL DEFAULT 'EXPLICIT_USER_COMMAND',
+            confidence_score REAL NOT NULL DEFAULT 1.0,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
         """)
 
         # Migration: Add external_id to email_messages if upgrading existing db
@@ -361,6 +373,52 @@ def init_db():
                 "Mohil - B.Tech AI Resume",
                 now_iso
             ))
+
+        # Seed initial adaptive self-learning memories if empty
+        cur_mem = conn.execute("SELECT id FROM learned_memories WHERE is_active = 1;")
+        if not cur_mem.fetchone():
+            import uuid
+            now_iso = datetime.now(timezone.utc).isoformat()
+            default_memories = [
+                (
+                    str(uuid.uuid4()),
+                    "COMMUNICATION_STYLE",
+                    "human_friendly_tone",
+                    "Speak warmly, naturally, and conversationally like a trusted, brilliant friend and executive Chief of Staff. Avoid stiff corporate buzzwords, robotic boilerplate, or cold formal phrasing. Keep it human, empathetic, and encouraging.",
+                    "EXPLICIT_USER_COMMAND",
+                    1.0,
+                    1,
+                    now_iso,
+                    now_iso
+                ),
+                (
+                    str(uuid.uuid4()),
+                    "PREFERENCE",
+                    "identity_and_passion",
+                    "Address Mohil warmly. He is a B.Tech CSE (AI) student ('27) at Mar Baselios Christian College, deeply passionate about autonomous drone robotics, computer vision, Python, and agentic workflows.",
+                    "EXPLICIT_USER_COMMAND",
+                    1.0,
+                    1,
+                    now_iso,
+                    now_iso
+                ),
+                (
+                    str(uuid.uuid4()),
+                    "COMMUNICATION_STYLE",
+                    "two_way_dialogue",
+                    "Always keep conversations active and human. Validate feelings of fatigue, celebrate academic breakthroughs, and conclude responses with a thoughtful question or proactive suggestion.",
+                    "EXPLICIT_USER_COMMAND",
+                    1.0,
+                    1,
+                    now_iso,
+                    now_iso
+                )
+            ]
+            conn.executemany("""
+            INSERT INTO learned_memories (
+                id, category, key, content, source, confidence_score, is_active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, default_memories)
     conn.close()
 
 def backup_database() -> Path:
