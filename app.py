@@ -54,14 +54,14 @@ def get_attendance_overview():
 
     lines = [
         f"### {status_icon} Overall Attendance: **{summary.overall_percentage:.1f}%**",
-        f"• **Total Classes Held:** {summary.total_classes} | **Attended:** {summary.total_present} | **Missed:** {summary.total_absent}",
+        f"• **Total Classes Held:** {summary.total_classes} | **Attended:** {summary.total_attended} | **Missed:** {summary.total_absent}",
         f"• {alert}\n",
         "| Subject | Attended | Missed | Total | Percentage | Status |",
         "| :--- | :---: | :---: | :---: | :---: | :--- |"
     ]
     for s in summary.subjects:
         badge = "🟢 Safe" if s.percentage >= 75.0 else "🔴 Low"
-        lines.append(f"| **{s.subject}** | {s.attended} | {s.missed} | {s.total_classes} | **{s.percentage:.1f}%** | {badge} |")
+        lines.append(f"| **{s.subject}** | {s.attended} | {s.absent} | {s.total_classes} | **{s.percentage:.1f}%** | {badge} |")
 
     return "\n".join(lines)
 
@@ -103,7 +103,14 @@ def get_supabase_diagnostics():
         )
     conn_str = "🟢 Connected" if status.get("connected") else "🔴 Disconnected"
     files = supabase_service.list_files()
-    file_list = [[f.get("name", "Unknown"), f.get("metadata", {}).get("size", "N/A"), f.get("updated_at", "N/A")] for f in files] if files else []
+    file_list = [
+        [
+            f.get("name", "Unknown"),
+            (f.get("metadata") or {}).get("size", "N/A") if isinstance(f, dict) else "N/A",
+            (f.get("updated_at") or "N/A") if isinstance(f, dict) else "N/A"
+        ]
+        for f in files if isinstance(f, dict)
+    ] if files else []
     md = (
         f"### ☁️ Supabase Cloud Storage Status\n"
         f"• **Status:** {conn_str}\n"
