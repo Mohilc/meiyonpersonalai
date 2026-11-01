@@ -173,7 +173,7 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
                 - **Self-Learning:** Try saying *"Call me bro"* or *"Please be more friendly and warm"* — watch it adapt its persona!
                 """
             )
-            chatbot = gr.Chatbot(height=480, bubble_full_width=False)
+            chatbot = gr.Chatbot(height=480)
             with gr.Row():
                 msg_input = gr.Textbox(
                     placeholder="Ask Meiyon anything or type /briefing, /attendance, /memory...",
