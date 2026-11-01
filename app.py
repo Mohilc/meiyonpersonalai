@@ -16,6 +16,17 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 import gradio as gr
+
+# Hugging Face ZeroGPU compatibility hook
+try:
+    import spaces
+
+    @spaces.GPU
+    def _zero_gpu_support():
+        """Ensures ZeroGPU harness initializes properly when running on HF GPU tier."""
+        return True
+except Exception:
+    pass
 from app.database import init_db
 from app.services import (
     messaging_bot_service,
