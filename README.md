@@ -4,7 +4,6 @@ emoji: 🚀
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
-sdk_version: 5.0.0
 app_file: app.py
 pinned: false
 license: mit
@@ -15,7 +14,7 @@ license: mit
 # 🚀 Meiyon - Executive Personal AI Manager
 ### Autonomous Career Intelligence, Academic Copilot, Self-Learning Memory & Supabase Cloud Persistence
 
-![Meiyon Executive Hero Banner](assets/meiyon_hero.png)
+![Meiyon Executive Hero Banner](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/meiyon_hero.png)
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -40,7 +39,7 @@ license: mit
 
 The Personal AI Manager features a high-performance Dark Glassmorphism interface connected in real-time to the FastAPI backend, SQLite WAL engine, Supabase Cloud Storage, and local MCP servers.
 
-![Executive AI Dashboard Preview](assets/dashboard_preview.jpg)
+![Executive AI Dashboard Preview](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/dashboard_preview.jpg)
 
 ---
 
@@ -132,7 +131,7 @@ graph TD
 
 ## 3. Deep Dive: How the Agentic Model Works
 
-![Agentic AI Cognitive Loop](assets/agent_cognition_loop.jpg)
+![Agentic AI Cognitive Loop](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/agent_cognition_loop.jpg)
 
 ### A. The Six-Stage Cognitive Loop
 1. **Perception Layer (Continuous Influx)**: Ingests events from Gmail, LinkedIn, Telegram, WhatsApp, and discovered jobs. Uses IMAP `BODY.PEEK[]` to prevent altering the `\Seen` state of the user's real inbox.

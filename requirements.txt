@@ -26,8 +26,9 @@ reportlab>=4.0.0
 # Cloud Storage & Database Persistence (Supabase)
 supabase>=2.33.0
 
-# Hugging Face Interactive Web UI
-gradio>=5.0.0
+# Hugging Face Interactive Web UI & Hub
+gradio
+huggingface_hub<0.25.0
 
 # OS Specific
 pywin32>=306; sys_platform == 'win32'
