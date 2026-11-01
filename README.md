@@ -3,8 +3,9 @@ title: Meiyon - Executive Personal AI Manager
 emoji: 🚀
 colorFrom: blue
 colorTo: indigo
-sdk: docker
-app_port: 7860
+sdk: gradio
+sdk_version: 5.0.0
+app_file: app.py
 pinned: false
 license: mit
 ---
