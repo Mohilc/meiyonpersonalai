@@ -52,9 +52,18 @@ def chat_with_meiyon(user_message, history):
         platform="telegram",
         text=clean
     )
-    history = history or []
-    history.append((clean, reply))
-    return "", history
+    valid_history = []
+    if history:
+        for item in history:
+            if isinstance(item, dict) and "role" in item and "content" in item:
+                valid_history.append(item)
+            elif isinstance(item, (list, tuple)) and len(item) == 2:
+                valid_history.append({"role": "user", "content": str(item[0])})
+                valid_history.append({"role": "assistant", "content": str(item[1])})
+
+    valid_history.append({"role": "user", "content": clean})
+    valid_history.append({"role": "assistant", "content": reply})
+    return "", valid_history
 
 
 def get_attendance_overview():
@@ -216,7 +225,7 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
 
             send_btn.click(chat_with_meiyon, [msg_input, chatbot], [msg_input, chatbot])
             msg_input.submit(chat_with_meiyon, [msg_input, chatbot], [msg_input, chatbot])
-            clear_btn.click(lambda: None, None, chatbot, queue=False)
+            clear_btn.click(lambda: [], None, chatbot, queue=False)
 
         # Tab 2: Academic Attendance & PDF Reports
         with gr.TabItem("🎓 Academic Attendance & PDF"):
