@@ -55,6 +55,12 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: str = ""
 
+    # Live Google Web Search & Intelligence (SerpApi)
+    SERPAPI_API_KEY: str = ""
+    SERPAPI_DEFAULT_LOCATION: str = "India"
+    SERPAPI_DEFAULT_GL: str = "in"
+    SERPAPI_DEFAULT_HL: str = "en"
+
     # MCP (Model Context Protocol) Settings
     GMAIL_MCP_ENABLED: bool = True
     GMAIL_ADDRESS: str = ""

@@ -89,7 +89,21 @@ def verify_job_listing(company: str, source_url: str, description: str) -> Tuple
                 recruiter_consistency = f"Corporate domain contact: {em_domain}"
                 evidence_findings.append(f"Recruiter email matches corporate domain: {em}")
 
-    # 4. Synthesize Status & Confidence
+    # 4. Live Web Reconnaissance via Google Search (SerpApi) for unverified domains
+    if not is_trusted_ats and len(company.strip()) > 3:
+        try:
+            from app.services import search_service
+            if search_service.is_search_available():
+                rep = search_service.verify_company_reputation(company.strip())
+                if not rep.get("is_safe"):
+                    for hit in rep.get("suspicious_hits", []):
+                        suspicious_indicators.append(f"Online scam alert found for '{company}': {hit.get('source')}")
+                else:
+                    evidence_findings.append(f"Live Google reconnaissance confirmed clean reputation for '{company}'")
+        except Exception:
+            pass
+
+    # 5. Synthesize Status & Confidence
     if suspicious_indicators:
         status = VerificationStatusEnum.HIGH_RISK
         confidence = "HIGH"

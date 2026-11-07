@@ -116,6 +116,9 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/supabase` - View Supabase cloud connection & stored files\n"
             "• `/supabase backup` - Trigger instant cloud database backup to Supabase\n"
             "• `/supabase restore` - Restore latest cloud database snapshot\n\n"
+            "🔍 *Google Search & Live Web Intelligence (SerpApi):*\n"
+            "• `/search <query>` - Real-time Google search (e.g. `/search latest edge AI drone models`)\n"
+            "• `/learnweb <topic>` - Research topic on Google & record facts to memory\n\n"
             "💬 *Or just chat naturally!* E.g. 'Be more friendly', 'Remember I have test on Friday', 'What emails do I have?', or 'Send my attendance pdf'."
         )
 
@@ -582,6 +585,27 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"💡 *Commands:* Reply `/supabase backup` to snapshot database, or `/supabase restore` to pull latest."
         )
 
+    # 3B. Live Google Web Search & AI Research Commands (SerpApi)
+    if cmd.startswith("/search ") or cmd.startswith("/google ") or cmd.startswith("search: ") or cmd.startswith("google: "):
+        raw = clean_text
+        for pfx in ("/search ", "/google ", "search: ", "google: "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        if raw:
+            from app.services import search_service
+            return search_service.search_and_summarize(raw, max_results=4)
+
+    if cmd.startswith("/learnweb ") or cmd.startswith("/research ") or cmd.startswith("research: ") or cmd.startswith("learn web: "):
+        raw = clean_text
+        for pfx in ("/learnweb ", "/research ", "research: ", "learn web: "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        if raw:
+            from app.services import search_service
+            return search_service.search_and_learn_topic(raw)
+
     if cmd in ("/pdf", "pdf", "/report", "report", "attendance pdf", "academic report", "download pdf", "generate pdf", "give me pdf", "send pdf"):
         pdf_path = academic_service.generate_academic_pdf_report()
         cloud_url_note = ""
@@ -843,6 +867,23 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             system_prompt += academic_grounding
         except Exception:
             pass
+
+    # C. Live Google Web Search & Real-Time Intelligence Grounding (SerpApi)
+    SEARCH_TRIGGERS = (
+        "search", "google", "look up", "find info", "latest", "what is", "who is",
+        "tell me about", "research", "news", "price of", "documentation", "how to"
+    )
+    if any(k in cmd for k in SEARCH_TRIGGERS):
+        # Do not trigger web search for internal system state queries
+        if not any(k in cmd for k in ("attendance", "my email", "inbox", "supabase", "my task", "my assignment", "briefing")):
+            try:
+                from app.services import search_service
+                if search_service.is_search_available():
+                    web_summary = search_service.search_and_summarize(clean_text, max_results=3)
+                    if web_summary and "Could not retrieve" not in web_summary:
+                        system_prompt += f"\n\n=== REAL-TIME GOOGLE SEARCH GROUNDING (SerpApi) ===\n{web_summary}\n"
+            except Exception as e:
+                logger.warning("SerpApi grounding failed: %s", str(e))
 
     history = get_conversation_history(sender_id)
     ai_response = llm_service.generate_completion(

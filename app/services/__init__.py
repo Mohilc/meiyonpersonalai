@@ -1,1 +1,36 @@
 """Services package init."""
+from app.services import (
+    academic_service,
+    audit_service,
+    briefing_service,
+    communication_service,
+    job_service,
+    learning_service,
+    llm_service,
+    mcp_service,
+    messaging_bot_service,
+    profile_service,
+    reminder_service,
+    resume_service,
+    search_service,
+    supabase_service,
+    task_service,
+)
+
+__all__ = [
+    "academic_service",
+    "audit_service",
+    "briefing_service",
+    "communication_service",
+    "job_service",
+    "learning_service",
+    "llm_service",
+    "mcp_service",
+    "messaging_bot_service",
+    "profile_service",
+    "reminder_service",
+    "resume_service",
+    "search_service",
+    "supabase_service",
+    "task_service",
+]

@@ -34,7 +34,8 @@ from app.services import (
     learning_service,
     supabase_service,
     communication_service,
-    job_service
+    job_service,
+    search_service
 )
 from app.models.communication import EmailMessageCreate
 
@@ -174,6 +175,20 @@ def scan_recruiter_email(sender, subject, body):
     return "\n".join(output)
 
 
+def run_live_google_search(query: str):
+    """Executes live Google Search via SerpApi."""
+    if not query or not query.strip():
+        return "❌ Please enter a search query."
+    return search_service.search_and_summarize(query.strip(), max_results=5)
+
+
+def run_search_and_learn(topic: str):
+    """Researches topic on Google and stores synthesized knowledge in Meiyon's memory bank."""
+    if not topic or not topic.strip():
+        return "❌ Please enter a topic to research."
+    return search_service.search_and_learn_topic(topic.strip())
+
+
 # Build Gradio Dark-Glassmorphism UI
 custom_theme = gr.themes.Soft(
     primary_hue="blue",
@@ -196,7 +211,7 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
             gr.Markdown(
                 """
                 Chat with Meiyon naturally or test executive commands:
-                - **Commands:** `/briefing`, `/attendance`, `/assignments`, `/memory`, `/remember <text>`, `/supabase`, `/pdf`
+                - **Commands:** `/briefing`, `/attendance`, `/assignments`, `/memory`, `/remember <text>`, `/search <query>`, `/learnweb <topic>`, `/supabase`, `/pdf`
                 - **Self-Learning:** Try saying *"Call me bro"* or *"Please be more friendly and warm"* — watch it adapt its persona!
                 """
             )
@@ -218,7 +233,9 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
                     ["Please be more friendly and warm when chatting with me!"],
                     ["Call me Mohil bro"],
                     ["Remember that my lab drone project uses YOLOv8 for obstacle detection"],
-                    ["/supabase"]
+                    ["/supabase"],
+                    ["/search latest breakthroughs in edge AI drones 2026"],
+                    ["/learnweb NVIDIA Nemotron 3 architecture"]
                 ],
                 inputs=msg_input
             )
@@ -299,6 +316,42 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
                 ],
                 inputs=[scan_sender, scan_subj, scan_body]
             )
+        # Tab 5: Google Search & AI Research (SerpApi)
+        with gr.TabItem("🔍 Live Google Intelligence & Research"):
+            gr.Markdown("### Real-Time Web Reconnaissance & Autonomous Fact Retrieval (SerpApi)")
+            search_status_icon = "🟢 Connected (SerpApi Active)" if search_service.is_search_available() else "🔴 SerpApi Key Missing"
+            gr.Markdown(f"**Integration Status:** {search_status_icon}")
+
+            with gr.Row():
+                with gr.Column(scale=2):
+                    search_query_input = gr.Textbox(
+                        label="Google Search Query / Topic",
+                        placeholder="e.g. YOLOv8 drone edge computing or latest AI internship opportunities in India",
+                        lines=2
+                    )
+                    with gr.Row():
+                        google_search_btn = gr.Button("🔍 Search Google", variant="primary")
+                        research_learn_btn = gr.Button("🧠 Research & Save to AI Memory", variant="secondary")
+
+                with gr.Column(scale=3):
+                    search_results_output = gr.Markdown(
+                        value="*Enter a search query or click one of the examples below to retrieve real-time Google search results.*",
+                        label="Live Search Intelligence"
+                    )
+
+            google_search_btn.click(run_live_google_search, inputs=search_query_input, outputs=search_results_output)
+            research_learn_btn.click(run_search_and_learn, inputs=search_query_input, outputs=search_results_output)
+
+            gr.Examples(
+                examples=[
+                    ["YOLOv8 Edge AI drone obstacle avoidance"],
+                    ["B.Tech AI internship opportunities Kerala India"],
+                    ["NVIDIA Nemotron 3 Ultra architecture and benchmarks"],
+                    ["FastAPI best practices for microservices 2026"]
+                ],
+                inputs=search_query_input
+            )
+
 
     gr.Markdown(
         """
