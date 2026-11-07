@@ -38,6 +38,24 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      # Google Search via SerpApi
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: SERPAPI_DEFAULT_LOCATION
+        value: "India"
+      - key: SERPAPI_DEFAULT_GL
+        value: "in"
+      - key: SERPAPI_DEFAULT_HL
+        value: "en"
+      # Supabase Cloud Storage & Database Persistence
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: "meiyon-storage"
+      - key: SUPABASE_AUTO_SYNC
+        value: "true"
       # Gmail MCP
       - key: GMAIL_ADDRESS
         sync: false
