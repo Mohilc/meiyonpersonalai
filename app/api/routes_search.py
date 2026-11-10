@@ -51,3 +51,4 @@ def learn_topic_from_web(req: LearnTopicRequest):
         "topic": req.topic,
         "message": res
     }
+

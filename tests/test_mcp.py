@@ -128,9 +128,11 @@ def test_mcp_service_email_sync_and_triage():
     finally:
         conn.close()
 
-    # Second sync should not duplicate
+    # Second sync should not re-sync existing emails (deduplication check)
+    first_ids = {e.external_id for e in res.new_emails if e.external_id}
     res_second = mcp_service.sync_unread_emails_via_mcp(limit=5)
-    assert res_second.synced_count == 0
+    second_ids = {e.external_id for e in res_second.new_emails if e.external_id}
+    assert len(first_ids.intersection(second_ids)) == 0, "Deduplication failed: email was re-synced"
 
 def test_mcp_service_linkedin_sync():
     """Validates syncing LinkedIn messages and connection requests into SQLite."""

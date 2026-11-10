@@ -122,7 +122,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "💬 *Or just chat naturally!* E.g. 'Be more friendly', 'Remember I have test on Friday', 'What emails do I have?', or 'Send my attendance pdf'."
         )
 
-    if cmd in ("/memory", "/learned", "memory", "learned", "my memory", "what have you learned"):
+    if cmd in ("/memory", "/learned", "memory", "learned", "my memory", "what have you learned") or any(p in cmd for p in ("what do you remember", "what have you learned", "show your memory", "show my memory", "show learned rules", "memory bank")):
         mems = learning_service.list_active_memories()
         if not mems:
             return (
@@ -179,7 +179,12 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"Starting a fresh conversational slate. What would you like to explore next, {profile.full_name}?"
         )
 
-    if cmd in ("/briefing", "briefing", "today", "schedule"):
+    is_briefing_query = cmd in ("/briefing", "briefing", "today", "schedule", "daily briefing") or any(p in cmd for p in (
+        "give me my briefing", "what are my priorities", "what should i do today",
+        "today's briefing", "today's agenda", "today's priorities", "brief me",
+        "morning briefing", "what's on my schedule", "show my schedule"
+    ))
+    if is_briefing_query:
         briefing = briefing_service.generate_daily_briefing()
         p_lines = []
         for i, t in enumerate(briefing.top_three_priorities, 1):
@@ -205,7 +210,18 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         "check gmail", "mail", "fetch email details", "get emails",
         "read emails", "email details"
     )
-    if cmd in EMAIL_TRIGGER_WORDS or any(cmd.startswith(pfx) for pfx in ("check my email", "what emails", "show my email", "get my email")):
+    is_email_list_query = (
+        cmd in EMAIL_TRIGGER_WORDS or
+        any(p in cmd for p in (
+            "check my email", "check my emails", "check email", "check emails",
+            "what emails", "what email", "show my email", "show my emails",
+            "show email", "show emails", "fetch my email", "fetch emails",
+            "get my email", "get emails", "read my emails", "do i have any email",
+            "any new email", "any unread email", "did anyone email", "recruiter email",
+            "recruiter emails", "my inbox", "check inbox", "check my inbox", "open inbox"
+        ))
+    ) and not any(cmd.startswith(pfx) for pfx in ("/email ", "/read ", "read email ", "view email ", "open email ", "/reply ", "reply to email "))
+    if is_email_list_query:
         emails = mcp_service.get_active_inbox_emails(limit=5, sync_live=True)
         if not emails:
             return (
@@ -233,17 +249,22 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         lines.append("💡 *Actions:* Reply `/email 1` (or 2, 3...) to read the full body, or `/reply 1` to draft an email response.")
         return "\n".join(lines)
 
+    email_read_match = re.search(r"(?:read|view|open|show|details of|check)?\s*email\s+(\d+|[a-zA-Z0-9_\-]+)", clean_text, re.IGNORECASE)
     if (
         cmd.startswith("/email ") or cmd.startswith("/read ") or
         cmd.startswith("read email ") or cmd.startswith("view email ") or
         cmd.startswith("open email ") or cmd.startswith("show email ") or
-        cmd.startswith("email details ") or cmd.startswith("details of email ")
+        cmd.startswith("email details ") or cmd.startswith("details of email ") or
+        (email_read_match and not is_email_list_query and not cmd.startswith("/reply"))
     ):
         raw = clean_text
         for pfx in ("/email ", "/read ", "read email ", "view email ", "open email ", "show email ", "email details ", "details of email "):
             if raw.lower().startswith(pfx):
                 raw = raw[len(pfx):].strip()
                 break
+        else:
+            if email_read_match:
+                raw = email_read_match.group(1).strip()
         matched_email = mcp_service.get_email_by_identifier(raw)
         if not matched_email:
             return f"❌ Could not find an email matching '{raw}'. Reply `/emails` to see available messages in your inbox."
@@ -276,10 +297,17 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"{reply_proposal}"
         )
 
-    if cmd.startswith("/reply ") or cmd.startswith("reply to email "):
+    email_reply_match = re.search(r"(?:reply to|respond to|send reply to)\s+email\s+(\d+|[a-zA-Z0-9_\-]+)", clean_text, re.IGNORECASE)
+    if cmd.startswith("/reply ") or cmd.startswith("reply to email ") or email_reply_match:
         raw = clean_text
-        pfx = "/reply " if cmd.startswith("/reply ") else "reply to email "
-        target = raw[len(pfx):].strip()
+        if cmd.startswith("/reply "):
+            target = raw[len("/reply "):].strip()
+        elif cmd.startswith("reply to email "):
+            target = raw[len("reply to email "):].strip()
+        elif email_reply_match:
+            target = email_reply_match.group(1).strip()
+        else:
+            target = "1" 
         matched = mcp_service.get_email_by_identifier(target)
         if not matched:
             return f"❌ Could not find email matching '{target}'. Reply `/emails` to see your inbox."
@@ -310,7 +338,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             platform=platform
         )
 
-    if cmd in ("/linkedin", "linkedin", "sync linkedin", "linkedin link", "linkedin links", "check linkedin", "linkedin status", "linkedin updates", "/li"):
+    if cmd in ("/linkedin", "linkedin", "sync linkedin", "linkedin link", "linkedin links", "check linkedin", "linkedin status", "linkedin updates", "/li") or any(p in cmd for p in ("check my linkedin", "show linkedin", "any linkedin message", "connection request", "my linkedin")):
         res = mcp_service.sync_linkedin_activity_via_mcp(limit=3)
         if not res.interactions:
             return (
@@ -410,7 +438,16 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         return "\n".join(lines)
 
     # 3. College Attendance & Academic Commands
-    if cmd in ("/attendance", "attendance", "att", "/att", "check attendance", "my attendance", "attendance status"):
+    is_attendance_query = (
+        cmd in ("/attendance", "attendance", "att", "/att", "check attendance", "my attendance", "attendance status") or
+        any(p in cmd for p in (
+            "what is my attendance", "how is my attendance", "check my attendance",
+            "my attendance percentage", "how many classes did i miss", "how many classes have i missed",
+            "how many classes attended", "am i safe in attendance", "is my attendance safe",
+            "college attendance", "show attendance", "show my attendance", "attendance report", "class attendance"
+        ))
+    ) and not any(cmd.startswith(pfx) for pfx in ("/absent", "/present", "mark absent", "mark present", "absent in", "present in"))
+    if is_attendance_query:
         summary = academic_service.get_attendance_summary()
         status_icon = "🟢 SAFE (>= 75%)" if summary.is_safe else "🔴 WARNING (< 75%)"
         lines = [
@@ -434,12 +471,16 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         lines.append("• Download PDF report: `/pdf`")
         return "\n".join(lines)
 
-    if any(cmd.startswith(pfx) for pfx in ("/absent", "absent", "mark absent", "noted absent")):
+    absent_match = re.search(r"(?:i was absent in|mark me absent (?:in|for)|mark absent (?:in|for)|i missed (?:class in|class for|my)?|absent (?:in|for)?)\s+([a-zA-Z0-9\s]+)", clean_text, re.IGNORECASE)
+    if any(cmd.startswith(pfx) for pfx in ("/absent", "absent", "mark absent", "noted absent")) or absent_match:
         raw = clean_text
         for pfx in ("/absent ", "absent in ", "absent on ", "absent ", "mark absent in ", "mark absent ", "noted absent "):
             if raw.lower().startswith(pfx):
                 raw = raw[len(pfx):].strip()
                 break
+        else:
+            if absent_match:
+                raw = absent_match.group(1).strip()
         parts = [p.strip() for p in raw.split("|", 1)]
         subject = parts[0]
         notes = parts[1] if len(parts) > 1 else "Absent noted via chat"
@@ -461,12 +502,16 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
                 f"👉 Type `/pdf` to get your updated Attendance & Absence PDF report."
             )
 
-    if any(cmd.startswith(pfx) for pfx in ("/present", "present", "mark present", "attended")):
+    present_match = re.search(r"(?:i was present in|mark me present (?:in|for)|mark present (?:in|for)|i attended (?:class in|class for)?|attended (?:class in|class for)?|present (?:in|for)?)\s+([a-zA-Z0-9\s]+)", clean_text, re.IGNORECASE)
+    if any(cmd.startswith(pfx) for pfx in ("/present", "present", "mark present", "attended")) or present_match:
         raw = clean_text
         for pfx in ("/present ", "present in ", "present ", "mark present in ", "mark present ", "attended "):
             if raw.lower().startswith(pfx):
                 raw = raw[len(pfx):].strip()
                 break
+        else:
+            if present_match:
+                raw = present_match.group(1).strip()
         parts = [p.strip() for p in raw.split("|", 1)]
         subject = parts[0]
         notes = parts[1] if len(parts) > 1 else "Attended class"
@@ -483,7 +528,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
                 f"• *Overall Attendance:* *{summary.overall_percentage}%*"
             )
 
-    if cmd in ("/assignments", "assignments", "homework", "/homework", "my assignments", "assignment list"):
+    if cmd in ("/assignments", "assignments", "homework", "/homework", "my assignments", "assignment list") or any(p in cmd for p in ("what assignments do i have", "my assignments", "check my assignments", "show assignments", "pending assignments", "any homework due", "assignment deadline")):
         assignments = academic_service.list_assignments()
         if not assignments:
             return (
@@ -586,12 +631,16 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         )
 
     # 3B. Live Google Web Search & AI Research Commands (SerpApi)
-    if cmd.startswith("/search ") or cmd.startswith("/google ") or cmd.startswith("search: ") or cmd.startswith("google: "):
+    search_match = re.search(r"^(?:can you )?(?:search google for|search for|look up|google|find info on|search online for)\s+(.+)", clean_text, re.IGNORECASE)
+    if cmd.startswith("/search ") or cmd.startswith("/google ") or cmd.startswith("search: ") or cmd.startswith("google: ") or (search_match and not any(k in cmd for k in ("email", "attendance", "assignment", "pdf", "briefing", "task"))):
         raw = clean_text
         for pfx in ("/search ", "/google ", "search: ", "google: "):
             if raw.lower().startswith(pfx):
                 raw = raw[len(pfx):].strip()
                 break
+        else:
+            if search_match:
+                raw = search_match.group(1).strip()
         if raw:
             from app.services import search_service
             return search_service.search_and_summarize(raw, max_results=4)
@@ -606,7 +655,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             from app.services import search_service
             return search_service.search_and_learn_topic(raw)
 
-    if cmd in ("/pdf", "pdf", "/report", "report", "attendance pdf", "academic report", "download pdf", "generate pdf", "give me pdf", "send pdf"):
+    if cmd in ("/pdf", "pdf", "/report", "report", "attendance pdf", "academic report", "download pdf", "generate pdf", "give me pdf", "send pdf") or any(p in cmd for p in ("send my attendance pdf", "give me my pdf", "generate pdf report", "download attendance report", "academic pdf", "send report pdf")):
         pdf_path = academic_service.generate_academic_pdf_report()
         cloud_url_note = ""
         try:
@@ -832,11 +881,15 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             )
 
     # 5. Continuous Self-Learning: Detect behavioral feedback, style adjustments, or explicit memory instructions
+    prefix_ack = ""
     learning_feedback = learning_service.extract_learnings_from_user_text(clean_text)
     if learning_feedback:
-        reply = learning_feedback["acknowledgment"]
-        add_conversation_turn(sender_id, clean_text, reply)
-        return reply
+        if learning_feedback.get("type") in ("TONE_ADAPTATION", "EXPLICIT_MEMORY", "CORRECTION") and len(clean_text.split()) <= 8:
+            reply = learning_feedback["acknowledgment"]
+            add_conversation_turn(sender_id, clean_text, reply)
+            return reply
+        else:
+            prefix_ack = learning_feedback["acknowledgment"] + "\n\n" 
 
     # 6. Natural Language Reasoning & Two-Way Conversational Dialogue
     system_prompt = build_executive_system_prompt(
@@ -894,7 +947,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         max_tokens=400,
         temperature=0.6
     )
-    final_reply = ai_response or llm_service.generate_contextual_fallback(clean_text, candidate_name=profile.full_name)
+    final_reply = prefix_ack + (ai_response or llm_service.generate_contextual_fallback(clean_text, candidate_name=profile.full_name))
     
     # Store user message and assistant reply in conversational memory buffer
     add_conversation_turn(sender_id, clean_text, final_reply)

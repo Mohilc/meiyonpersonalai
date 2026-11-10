@@ -119,3 +119,4 @@ def test_messaging_bot_search_commands():
     with patch("app.services.search_service.search_and_learn_topic", return_value="Mocked Learned Topic"):
         res = messaging_bot_service.handle_incoming_text("test_user", "telegram", "/learnweb drone swarm telemetry")
         assert res == "Mocked Learned Topic"
+

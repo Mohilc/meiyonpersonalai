@@ -193,3 +193,27 @@ def test_whatsapp_simulation_endpoint():
     assert data["sender"] == "+918590144798"
 
 
+def test_natural_language_queries_without_slash_commands():
+    """Verifies that the bot understands and acts on natural language without requiring slash commands."""
+    # 1. Natural Email query
+    res_email = messaging_bot_service.handle_incoming_text("any", "telegram", "Can you please check my emails?")
+    assert "GMAIL INBOX" in res_email
+
+    # 2. Natural Attendance query
+    res_att = messaging_bot_service.handle_incoming_text("any", "telegram", "What is my attendance percentage?")
+    assert "COLLEGE ATTENDANCE OVERVIEW" in res_att
+
+    # 3. Natural Briefing query
+    res_brief = messaging_bot_service.handle_incoming_text("any", "telegram", "Give me my daily briefing for today")
+    assert "BRIEFING" in res_brief
+
+    # 4. Natural Assignments query
+    res_assign = messaging_bot_service.handle_incoming_text("any", "telegram", "What assignments do I have pending?")
+    assert "ACADEMIC ASSIGNMENTS" in res_assign
+
+    # 5. Natural Memory query
+    res_mem = messaging_bot_service.handle_incoming_text("any", "telegram", "What have you learned about me so far?")
+    assert "MEIYON'S LEARNED MEMORY" in res_mem
+
+
+

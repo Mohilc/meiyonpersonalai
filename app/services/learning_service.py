@@ -20,11 +20,11 @@ from app.models.learning import (
 
 logger = logging.getLogger(__name__)
 
-# Patterns for explicit learning triggers
+# Patterns for explicit learning triggers (flexible anchors)
 EXPLICIT_REMEMBER_PATTERNS = [
-    r"^(?:remember|note down|keep in mind|learn|don't forget)\s*(?:that|this)?[:\s]+(.+)",
-    r"^from now on[,\s]+(?:always\s+)?(.+)",
-    r"^please (?:remember|note down)[:\s]+(.+)"
+    r"(?:remember|note down|keep in mind|learn|don't forget)\s*(?:that|this)?[:\s]+(.+)",
+    r"from now on[,\s]+(?:always\s+)?(.+)",
+    r"please (?:remember|note down)[:\s]+(.+)"
 ]
 
 # Patterns for tone and style preferences
@@ -248,6 +248,35 @@ def extract_learnings_from_user_text(text: str) -> Optional[Dict[str, Any]]:
                 "content": mem.content,
                 "acknowledgment": f"💡 *Correction Learned!*\nThank you for correcting me! I've saved: _\"{correction_text}\"_ and will adapt right away."
             }
+
+    # 4. Check for implicit factual knowledge & project context
+    AUTO_FACT_PATTERNS = [
+        (r"(?:i am working on|i'm working on|my project is|my current project is)\s+([^.!?\n]+)", "project", "Working on: {match}"),
+        (r"(?:my goal is|i want to become|i am targeting|i want to work as|aiming for)\s+([^.!?\n]+)", "goal", "Career goal: {match}"),
+        (r"(?:i code in|i program in|my favorite language is)\s+([^.!?\n]+)", "tech", "Primary technical tools: {match}"),
+        (r"(?:my college is|i study at|i'm studying at)\s+([^.!?\n]+)", "education", "Studying at: {match}"),
+        (r"(?:i prefer to|i like when|i really like)\s+([^.!?\n]+)", "preference", "User preference: {match}")
+    ]
+    for pat, key, tmpl in AUTO_FACT_PATTERNS:
+        match = re.search(pat, clean_text, re.IGNORECASE)
+        if match:
+            extracted = match.group(1).strip()
+            if 2 < len(extracted) < 120:
+                formatted = tmpl.replace("{match}", extracted)
+                key_slug = re.sub(r"[^a-z0-9_]+", "_", extracted[:25].lower()).strip("_")
+                mem = add_or_update_memory(
+                    category="FACTUAL_KNOWLEDGE",
+                    key=f"{key}_{key_slug}",
+                    content=formatted,
+                    source="AUTOMATIC_EXTRACTION",
+                    confidence_score=0.9
+                )
+                return {
+                    "type": "AUTO_FACT",
+                    "key": mem.key,
+                    "content": mem.content,
+                    "acknowledgment": f"🧠 *Noted & Saved to Memory!*\nI've learned: _\"{formatted}\"_\nI'll remember this across all our future conversations! ✨"
+                }
 
     return None
 

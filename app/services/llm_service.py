@@ -96,6 +96,38 @@ def generate_contextual_fallback(prompt: str, candidate_name: str = "Mohil") -> 
     )
 
 
+def get_api_key_pool(task_type: str = "general") -> List[str]:
+    """
+    Returns an ordered list of active, unique NVIDIA NIM API keys for load balancing
+    and instant failover across accounts.
+    """
+    keys: List[str] = []
+    if task_type in ("reasoning", "vision"):
+        candidate_keys = [
+            settings.NVIDIA_REASONING_KEY,
+            getattr(settings, "NVIDIA_MISTRAL_KEY", ""),
+            settings.NVIDIA_VISION_KEY,
+            settings.NVIDIA_GENERAL_KEY,
+            getattr(settings, "NVIDIA_MUSE_KEY", ""),
+            settings.AI_API_KEY
+        ]
+    else:
+        candidate_keys = [
+            settings.NVIDIA_GENERAL_KEY,
+            getattr(settings, "NVIDIA_MUSE_KEY", ""),
+            settings.NVIDIA_REASONING_KEY,
+            getattr(settings, "NVIDIA_MISTRAL_KEY", ""),
+            settings.NVIDIA_VISION_KEY,
+            settings.AI_API_KEY
+        ]
+
+    for k in candidate_keys:
+        clean = (k or "").strip()
+        if clean and clean not in keys:
+            keys.append(clean)
+    return keys
+
+
 def generate_completion(
     prompt: str,
     system_prompt: Optional[str] = None,
@@ -106,89 +138,112 @@ def generate_completion(
 ) -> Optional[str]:
     """
     Executes a chat completion across the configured AI provider with multi-model
-    resilience and support for multi-turn conversational history.
+    resilience, multi-key failover, and support for multi-turn conversational history.
     """
     if settings.AI_PROVIDER != "nvidia_nim":
         return generate_contextual_fallback(prompt)
 
-    api_key = settings.NVIDIA_GENERAL_KEY or settings.NVIDIA_REASONING_KEY
-    if not api_key:
-        logger.warning("NVIDIA NIM API key not configured for task_type: %s", task_type)
+    key_pool = get_api_key_pool(task_type=task_type)
+    if not key_pool:
+        logger.warning("No NVIDIA NIM API keys configured for task_type: %s", task_type)
         return generate_contextual_fallback(prompt)
 
-    # Multi-model resilience order: start with fast, ultra-responsive models
+    # Multi-model resilience order: align tasks to peak model competencies
     candidate_models: List[str] = []
     if task_type == "general":
-        primary = settings.NVIDIA_GENERAL_MODEL or "google/diffusiongemma-26b-a4b-it"
+        primary = settings.NVIDIA_GENERAL_MODEL or "nvidia/nemotron-3.5-bolt-e4b"
         candidate_models = [
             primary,
-            "google/diffusiongemma-26b-a4b-it",
-            "nvidia/nemotron-3-super-120b-a12b",
-            "stepfun-ai/step-5-preview"
+            "nvidia/nemotron-3.5-bolt-e4b",
+            getattr(settings, "NVIDIA_MISTRAL_MODEL", "mistralai/mistral-large-4-1t-a52b"),
+            getattr(settings, "NVIDIA_MUSE_MODEL", "meta/muse-glimmer-30b"),
+            "nvidia/nemotron-3.5-lightning-30b-a3b"
         ]
     elif task_type == "vision":
         candidate_models = [
-            settings.NVIDIA_VISION_MODEL,
-            "google/diffusiongemma-26b-a4b-it"
+            settings.NVIDIA_VISION_MODEL or "mistralai/mistral-large-4-1t-a52b",
+            getattr(settings, "NVIDIA_MISTRAL_MODEL", "mistralai/mistral-large-4-1t-a52b"),
+            getattr(settings, "NVIDIA_MUSE_MODEL", "meta/muse-glimmer-30b"),
+            "nvidia/nemotron-3.5-bolt-e4b"
         ]
-    else:  # reasoning
+    else:  # reasoning / deep strategy
         candidate_models = [
-            settings.NVIDIA_REASONING_MODEL or "nvidia/nemotron-3-super-120b-a12b",
-            "nvidia/nemotron-3-super-120b-a12b",
-            "google/diffusiongemma-26b-a4b-it"
+            settings.NVIDIA_REASONING_MODEL or "mistralai/mistral-large-4-1t-a52b",
+            getattr(settings, "NVIDIA_MISTRAL_MODEL", "mistralai/mistral-large-4-1t-a52b"),
+            getattr(settings, "NVIDIA_MUSE_MODEL", "meta/muse-glimmer-30b"),
+            "nvidia/nemotron-3.5-bolt-e4b",
+            "nvidia/nemotron-3.5-lightning-30b-a3b"
         ]
 
-    # Deduplicate while preserving order
+    # Deduplicate models while preserving order
     seen = set()
-    # Keep at most 2 model candidates with aggressive fast timeout to keep chatbot snappy
-    models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))][:2]
+    models_to_try = [m for m in candidate_models if m and not (m in seen or seen.add(m))][:4]
 
     # Build multi-turn messages payload
     messages: List[Dict[str, str]] = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
     if conversation_history:
-        for turn in conversation_history[-4:]:  # keep last 4 turns for high speed
+        for turn in conversation_history[-6:]:  # keep last 6 turns for rich context
             messages.append({"role": turn.get("role", "user"), "content": turn.get("content", "")})
     messages.append({"role": "user", "content": prompt})
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
     url = f"{settings.NVIDIA_BASE_URL.rstrip('/')}/chat/completions"
 
+    # Orchestrate across models and keys with automatic failover
     for model_name in models_to_try:
+        # Mistral Large 4 completes in 1.7-6s; Nemotron Bolt in <1s; keep timeouts tight to maintain responsiveness
+        req_timeout = 8.0 if "mistral" in model_name else (4.0 if "muse" in model_name else 6.0)
         payload = {
             "model": model_name,
             "messages": messages,
-            "max_tokens": min(max_tokens, 256),
+            "max_tokens": min(max_tokens, 1024),
             "temperature": temperature
         }
-        try:
-            with httpx.Client(timeout=2.5) as client:
-                resp = client.post(url, headers=headers, json=payload)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    choices = data.get("choices", [])
-                    if choices:
-                        message = choices[0].get("message", {})
-                        content = message.get("content")
-                        
-                        # Fallback for reasoning models where answer may be within reasoning_content
-                        if not content and message.get("reasoning_content"):
-                            reasoning = message.get("reasoning_content", "").strip()
-                            lines = [l.strip() for l in reasoning.splitlines() if l.strip()]
-                            if lines:
-                                content = lines[-1]
-                                
-                        if content and content.strip():
-                            return content.strip()
-                else:
-                    logger.debug("NVIDIA NIM model %s failed (%d): %s", model_name, resp.status_code, resp.text)
-        except Exception as e:
-            logger.debug("NVIDIA NIM attempt with %s failed: %s", model_name, str(e))
-            continue
+
+        for api_key in key_pool[:2]:  # try top 2 keys per model
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            try:
+                with httpx.Client(timeout=req_timeout) as client:
+                    resp = client.post(url, headers=headers, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        choices = data.get("choices", [])
+                        if choices:
+                            message = choices[0].get("message", {})
+                            content = message.get("content")
+
+                            # Fallback for reasoning models where answer is within reasoning_content
+                            if not content and message.get("reasoning_content"):
+                                reasoning = message.get("reasoning_content", "").strip()
+                                clean_lines = [
+                                    l.strip() for l in reasoning.splitlines()
+                                    if l.strip() and not l.strip().startswith(("1.", "2.", "3.", "*", "-", "#"))
+                                ]
+                                if clean_lines:
+                                    content = clean_lines[-1]
+                                else:
+                                    content = reasoning[-300:]
+
+                            if content and content.strip():
+                                return content.strip()
+                    elif resp.status_code in (401, 403, 429):
+                        # Key specific error; try next key in pool
+                        logger.debug("NVIDIA NIM key error (%d) for model %s; rotating key.", resp.status_code, model_name)
+                        continue
+                    else:
+                        logger.debug("NVIDIA NIM model %s failed (%d): %s", model_name, resp.status_code, resp.text[:120])
+                        break
+            except httpx.TimeoutException:
+                logger.debug("NVIDIA NIM model %s timed out; switching to next model.", model_name)
+                # Model itself is slow/unresponsive; break to next candidate model immediately
+                break
+            except Exception as e:
+                logger.debug("NVIDIA NIM attempt with %s failed: %s", model_name, str(e))
+                continue
 
     # Instant Fallback: zero waiting, seamless conversational response
     return generate_contextual_fallback(prompt)
@@ -251,6 +306,85 @@ def synthesize_executive_briefing_with_ai(
         max_tokens=1024,
         temperature=0.6
     )
+
+
+def analyze_image_multimodal(
+    image_bytes: bytes,
+    prompt: str = "Describe this image in detail and extract all key insights, text, and objects.",
+    image_format: str = "png",
+    candidate_name: str = "Mohil"
+) -> Dict[str, Any]:
+    """
+    Performs multimodal vision perception and reasoning using Mistral Large 4 (1T MoE)
+    and Meta Muse Glimmer with automatic multi-key failover across active NVIDIA accounts.
+    """
+    import base64
+    key_pool = get_api_key_pool(task_type="vision")
+    if not key_pool:
+        return {"status": "ERROR", "error": "No vision API keys configured."}
+
+    b64 = base64.b64encode(image_bytes).decode("utf-8")
+    mime = f"image/{image_format.lower().replace('jpg', 'jpeg')}"
+    data_url = f"data:{mime};base64,{b64}"
+
+    multimodal_models = [
+        getattr(settings, "NVIDIA_MISTRAL_MODEL", "mistralai/mistral-large-4-1t-a52b"),
+        settings.NVIDIA_VISION_MODEL or "mistralai/mistral-large-4-1t-a52b",
+        getattr(settings, "NVIDIA_MUSE_MODEL", "meta/muse-glimmer-30b")
+    ]
+    seen = set()
+    models_to_try = [m for m in multimodal_models if m and not (m in seen or seen.add(m))]
+
+    url = f"{settings.NVIDIA_BASE_URL.rstrip('/')}/chat/completions"
+
+    payload_base = {
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": data_url}}
+                ]
+            }
+        ],
+        "max_tokens": 1024,
+        "temperature": 0.4
+    }
+
+    for model_name in models_to_try:
+        payload = dict(payload_base)
+        payload["model"] = model_name
+        for api_key in key_pool[:2]:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            try:
+                with httpx.Client(timeout=20.0) as client:
+                    resp = client.post(url, headers=headers, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        choices = data.get("choices", [])
+                        if choices:
+                            msg = choices[0].get("message", {})
+                            content = msg.get("content") or ""
+                            reasoning = msg.get("reasoning_content") or ""
+                            text_out = content.strip() if content else reasoning.strip()
+                            if text_out:
+                                return {
+                                    "status": "SUCCESS",
+                                    "model": model_name,
+                                    "analysis": text_out,
+                                    "reasoning_content": reasoning,
+                                    "format": image_format
+                                }
+            except Exception as e:
+                logger.debug("Multimodal call to %s failed: %s", model_name, str(e))
+                continue
+
+    # Fallback to OCR text extraction + textual analysis if direct multimodal call failed
+    logger.info("Direct multimodal vision timed out or failed; falling back to Nemotron OCR pipeline.")
+    return analyze_document_with_ocr(image_bytes, prompt=prompt, image_format=image_format, candidate_name=candidate_name)
 
 
 def extract_text_with_ocr(image_bytes: bytes, image_format: str = "png") -> Dict[str, Any]:

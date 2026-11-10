@@ -35,7 +35,8 @@ from app.services import (
     supabase_service,
     communication_service,
     job_service,
-    search_service
+    search_service,
+    llm_service
 )
 from app.models.communication import EmailMessageCreate
 
@@ -45,25 +46,34 @@ init_db()
 
 def chat_with_meiyon(user_message, history):
     """Processes message via Meiyon's messaging bot engine with full self-learning."""
-    if not user_message or not user_message.strip():
-        return "", history
-    clean = user_message.strip()
-    reply = messaging_bot_service.handle_incoming_text(
-        sender_id="hf_space_guest",
-        platform="telegram",
-        text=clean
-    )
     valid_history = []
     if history:
         for item in history:
             if isinstance(item, dict) and "role" in item and "content" in item:
-                valid_history.append(item)
+                c = item["content"]
+                if isinstance(c, list):
+                    texts = [x.get("text", str(x)) if isinstance(x, dict) else str(x) for x in c]
+                    c = "\n".join(texts)
+                valid_history.append({"role": str(item["role"]), "content": str(c)})
             elif isinstance(item, (list, tuple)) and len(item) == 2:
                 valid_history.append({"role": "user", "content": str(item[0])})
                 valid_history.append({"role": "assistant", "content": str(item[1])})
 
+    if not user_message or not user_message.strip():
+        return "", valid_history
+
+    clean = user_message.strip()
+    try:
+        reply = messaging_bot_service.handle_incoming_text(
+            sender_id="hf_space_guest",
+            platform="telegram",
+            text=clean
+        )
+    except Exception as e:
+        reply = f"⚠️ An unexpected error occurred: {e}"
+
     valid_history.append({"role": "user", "content": clean})
-    valid_history.append({"role": "assistant", "content": reply})
+    valid_history.append({"role": "assistant", "content": str(reply)})
     return "", valid_history
 
 
@@ -187,6 +197,55 @@ def run_search_and_learn(topic: str):
     if not topic or not topic.strip():
         return "❌ Please enter a topic to research."
     return search_service.search_and_learn_topic(topic.strip())
+
+
+def run_multimodal_vision(image_file, prompt: str):
+    """Analyzes image using Mistral Large 4 (1T MoE) and Muse Glimmer with MoE reasoning."""
+    if not image_file:
+        return "❌ Please upload an image first."
+    try:
+        image_path = image_file if isinstance(image_file, str) else getattr(image_file, "name", str(image_file))
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
+        suffix = Path(image_path).suffix.lstrip(".").lower() or "png"
+        res = llm_service.analyze_image_multimodal(
+            image_bytes=image_bytes,
+            prompt=prompt.strip() if prompt else "Describe this image in detail and extract all key insights, text, and objects.",
+            image_format=suffix
+        )
+        if res.get("status") == "SUCCESS":
+            md = [
+                f"### 👁️ Multimodal AI Vision & Reasoning",
+                f"• **Active Model:** `{res.get('model')}`",
+                f"\n**Analysis:**\n{res.get('analysis')}"
+            ]
+            if res.get("reasoning_content"):
+                md.append(f"\n\n<details><summary>🧠 <i>View MoE Reasoning Trace</i></summary>\n\n```\n{res['reasoning_content']}\n```\n</details>")
+            return "\n".join(md)
+        return f"❌ Analysis error: {res.get('error', 'Unknown failure')}"
+    except Exception as e:
+        return f"❌ Multimodal vision failed: {str(e)}"
+
+
+def run_document_ocr(image_file):
+    """Performs dense document OCR using NVIDIA Nemotron OCR v2."""
+    if not image_file:
+        return "❌ Please upload a document or screenshot first."
+    try:
+        image_path = image_file if isinstance(image_file, str) else getattr(image_file, "name", str(image_file))
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
+        suffix = Path(image_path).suffix.lstrip(".").lower() or "png"
+        res = llm_service.extract_text_with_ocr(image_bytes=image_bytes, image_format=suffix)
+        if res.get("status") == "SUCCESS":
+            return (
+                f"### 📄 Nemotron OCR v2 Extraction\n"
+                f"• **Detected Blocks:** {res.get('detections_count', 0)}\n\n"
+                f"```text\n{res.get('full_text', 'No text detected.')}\n```"
+            )
+        return f"❌ OCR error: {res.get('error', 'Failed to scan image')}"
+    except Exception as e:
+        return f"❌ OCR failed: {str(e)}"
 
 
 # Build Gradio Dark-Glassmorphism UI
@@ -351,6 +410,34 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
                 ],
                 inputs=search_query_input
             )
+
+        # Tab 6: Multimodal AI Vision & Document OCR
+        with gr.TabItem("👁️ Multimodal Vision & OCR"):
+            gr.Markdown("### Autonomous Multimodal Perception & Dense Document OCR")
+            gr.Markdown(
+                "Upload drone images, lab setups, diagrams, or documents. "
+                "Powered by **Mistral Large 4 (1T MoE)**, **Meta Muse Glimmer (30B)** & **Nemotron OCR v2**."
+            )
+            with gr.Row():
+                with gr.Column(scale=2):
+                    vision_image_input = gr.Image(type="filepath", label="Upload Image / Screenshot")
+                    vision_prompt_input = gr.Textbox(
+                        label="Vision Prompt / Question",
+                        placeholder="e.g. Describe the color and shape on the left and right, or inspect circuit components",
+                        value="Describe the color and shape on the left and on the right.",
+                        lines=2
+                    )
+                    with gr.Row():
+                        vision_run_btn = gr.Button("👁️ Analyze with Multimodal AI", variant="primary")
+                        ocr_run_btn = gr.Button("📄 Extract Text with Nemotron OCR", variant="secondary")
+                with gr.Column(scale=3):
+                    vision_output = gr.Markdown(
+                        value="*Upload an image and click analyze to see live perception results.*",
+                        label="Multimodal Vision Output"
+                    )
+
+            vision_run_btn.click(run_multimodal_vision, inputs=[vision_image_input, vision_prompt_input], outputs=vision_output)
+            ocr_run_btn.click(run_document_ocr, inputs=vision_image_input, outputs=vision_output)
 
 
     gr.Markdown(
