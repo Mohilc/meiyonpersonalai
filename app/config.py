@@ -36,7 +36,6 @@ class Settings(BaseSettings):
     AI_PROVIDER: str = "nvidia_nim"  # nvidia_nim, gemini, ollama, local_heuristic
     AI_API_KEY: str = ""
     AI_MODEL: str = "nvidia/nemotron-3.5-bolt-e4b"
-    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
     # Multi-Model and Multi-Key Pool (NVIDIA NIM)
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"

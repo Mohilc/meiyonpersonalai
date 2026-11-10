@@ -44,25 +44,56 @@ from app.models.communication import EmailMessageCreate
 init_db()
 
 
+def _sanitize_content(content):
+    """Flatten Gradio 6 nested content (list[dict]) into a plain string."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(str(item.get("text", item.get("value", ""))))
+            else:
+                parts.append(str(item))
+        return "\n".join(parts)
+    return str(content) if content is not None else ""
+
+
+def _sanitize_history(history):
+    """Normalize any Gradio history format into a clean list of role/content dicts."""
+    clean = []
+    if not history:
+        return clean
+    for item in history:
+        if isinstance(item, dict) and "role" in item and "content" in item:
+            clean.append({
+                "role": str(item["role"]),
+                "content": _sanitize_content(item["content"]),
+            })
+        elif isinstance(item, (list, tuple)) and len(item) >= 2:
+            clean.append({"role": "user", "content": _sanitize_content(item[0])})
+            clean.append({"role": "assistant", "content": _sanitize_content(item[1])})
+        elif hasattr(item, "role") and hasattr(item, "content"):
+            # ChatMessage object
+            clean.append({
+                "role": str(item.role),
+                "content": _sanitize_content(item.content),
+            })
+    return clean
+
+
 def chat_with_meiyon(user_message, history):
     """Processes message via Meiyon's messaging bot engine with full self-learning."""
-    valid_history = []
-    if history:
-        for item in history:
-            if isinstance(item, dict) and "role" in item and "content" in item:
-                c = item["content"]
-                if isinstance(c, list):
-                    texts = [x.get("text", str(x)) if isinstance(x, dict) else str(x) for x in c]
-                    c = "\n".join(texts)
-                valid_history.append({"role": str(item["role"]), "content": str(c)})
-            elif isinstance(item, (list, tuple)) and len(item) == 2:
-                valid_history.append({"role": "user", "content": str(item[0])})
-                valid_history.append({"role": "assistant", "content": str(item[1])})
+    valid_history = _sanitize_history(history)
 
-    if not user_message or not user_message.strip():
+    if not user_message or (isinstance(user_message, str) and not user_message.strip()):
         return "", valid_history
 
-    clean = user_message.strip()
+    # Extract text from Gradio 6 preprocessed input
+    clean = _sanitize_content(user_message).strip()
+    if not clean:
+        return "", valid_history
+
     try:
         reply = messaging_bot_service.handle_incoming_text(
             sender_id="hf_space_guest",
@@ -73,7 +104,7 @@ def chat_with_meiyon(user_message, history):
         reply = f"⚠️ An unexpected error occurred: {e}"
 
     valid_history.append({"role": "user", "content": clean})
-    valid_history.append({"role": "assistant", "content": str(reply)})
+    valid_history.append({"role": "assistant", "content": str(reply) if reply else "⚠️ Empty response from Meiyon."})
     return "", valid_history
 
 
@@ -274,7 +305,7 @@ with gr.Blocks(title="Meiyon - Executive Personal AI Manager") as demo:
                 - **Self-Learning:** Try saying *"Call me bro"* or *"Please be more friendly and warm"* — watch it adapt its persona!
                 """
             )
-            chatbot = gr.Chatbot(height=480)
+            chatbot = gr.Chatbot(height=480, type="messages")
             with gr.Row():
                 msg_input = gr.Textbox(
                     placeholder="Ask Meiyon anything or type /briefing, /attendance, /memory...",
