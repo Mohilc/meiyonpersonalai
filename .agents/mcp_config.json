@@ -13,6 +13,10 @@
       "env": {
         "PYTHONPATH": "C:\\Users\\MOHIL\\Desktop\\agenticai"
       }
+    },
+    "linkedin-zapier": {
+      "url": "https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp",
+      "type": "http"
     }
   }
 }

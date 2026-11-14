@@ -75,6 +75,10 @@ class Settings(BaseSettings):
     LINKEDIN_HEADLESS: bool = True
     MCP_SIMULATION_FALLBACK: bool = True  # Safely simulate when live credentials not yet set
 
+    # Zapier MCP LinkedIn Integration (live OAuth-backed, no cookie required)
+    ZAPIER_LINKEDIN_MCP_ID: str = "029df438-e88c-8c07-8d68-61978ee0976a"
+    ZAPIER_LINKEDIN_MCP_URL: str = "https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp"
+
     # Messaging Integrations: Telegram & WhatsApp
     TELEGRAM_ENABLED: bool = True
     TELEGRAM_BOT_TOKEN: str = ""

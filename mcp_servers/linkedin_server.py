@@ -1,4 +1,4 @@
-"""LinkedIn Browser Automation MCP Server for Personal AI Manager.
+"""LinkedIn MCP Server for Personal AI Manager.
 
 Provides standard Model Context Protocol (MCP) tools to:
 - Retrieve LinkedIn user / candidate profile details
@@ -7,20 +7,26 @@ Provides standard Model Context Protocol (MCP) tools to:
 - Publish post drafts to the feed (guarded by Human-In-The-Loop approval gate)
 - Check session and browser connection status
 
-Supports:
-1. Playwright browser automation with LinkedIn session cookie (`li_at`)
-2. Sandbox / Simulation fallback when session cookie is not yet provided
+Backends (priority order):
+1. Zapier MCP LinkedIn Server (live OAuth, server ID: 029df438-e88c-8c07-8d68-61978ee0976a)
+   → Calls Zapier's hosted MCP over HTTP/JSON-RPC — no cookie scraping needed.
+2. Playwright browser automation with LinkedIn session cookie (`li_at`)
+3. Sandbox / Simulation fallback when no live credentials are configured
 """
 import os
 import sys
 import json
 import uuid
+import logging
+import requests
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 # Load local environment configuration (.env)
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 try:
     from mcp.server.mcpserver import MCPServer
@@ -44,11 +50,78 @@ except (ImportError, ModuleNotFoundError):
 # Initialize MCP Server
 server = MCPServer("linkedin-mcp")
 
-# Configuration from environment or defaults
+# ── Configuration ────────────────────────────────────────────────────────────
 LINKEDIN_LI_AT_COOKIE = os.getenv("LINKEDIN_LI_AT_COOKIE", "").strip()
-
 LINKEDIN_HEADLESS = os.getenv("LINKEDIN_HEADLESS", "true").lower() in ("true", "1", "yes")
 MCP_SIMULATION_FALLBACK = os.getenv("MCP_SIMULATION_FALLBACK", "true").lower() in ("true", "1", "yes")
+
+# Zapier MCP LinkedIn Server
+ZAPIER_LINKEDIN_MCP_URL = os.getenv(
+    "ZAPIER_LINKEDIN_MCP_URL",
+    "https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp"
+)
+ZAPIER_LINKEDIN_MCP_ID = os.getenv("ZAPIER_LINKEDIN_MCP_ID", "029df438-e88c-8c07-8d68-61978ee0976a")
+
+
+# ── Zapier MCP HTTP Client ───────────────────────────────────────────────────
+def _zapier_mcp_call(tool_name: str, arguments: dict = None, timeout: int = 15) -> Optional[Dict]:
+    """
+    Calls a tool on the Zapier-hosted LinkedIn MCP server via JSON-RPC 2.0 over HTTP.
+    Returns the parsed result dict on success, or None if the call fails.
+    """
+    payload = {
+        "jsonrpc": "2.0",
+        "id": str(uuid.uuid4()),
+        "method": "tools/call",
+        "params": {
+            "name": tool_name,
+            "arguments": arguments or {}
+        }
+    }
+    try:
+        resp = requests.post(
+            ZAPIER_LINKEDIN_MCP_URL,
+            json=payload,
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            timeout=timeout
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if "result" in data:
+            # MCP result may be nested in content[0].text or directly
+            result = data["result"]
+            if isinstance(result, dict) and "content" in result:
+                content = result["content"]
+                if isinstance(content, list) and content:
+                    text = content[0].get("text", "")
+                    try:
+                        return json.loads(text)
+                    except (json.JSONDecodeError, TypeError):
+                        return {"raw": text}
+            return result
+        elif "error" in data:
+            logger.warning("Zapier MCP error for %s: %s", tool_name, data["error"])
+    except requests.exceptions.Timeout:
+        logger.warning("Zapier MCP timeout calling %s", tool_name)
+    except requests.exceptions.RequestException as e:
+        logger.warning("Zapier MCP request failed for %s: %s", tool_name, str(e))
+    return None
+
+
+def _is_zapier_available() -> bool:
+    """Quick health probe to Zapier MCP endpoint."""
+    try:
+        payload = {"jsonrpc": "2.0", "id": "ping", "method": "tools/list", "params": {}}
+        resp = requests.post(
+            ZAPIER_LINKEDIN_MCP_URL,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=8
+        )
+        return resp.status_code == 200
+    except Exception:
+        return False
+
 
 # Sample sandbox data for immediate testing and demonstration
 SANDBOX_PROFILE = {
@@ -135,7 +208,14 @@ def _run_playwright_action(action_fn):
 def get_linkedin_profile(profile_url: Optional[str] = None) -> str:
     """
     Retrieves candidate or target user LinkedIn profile summary, headline, education, and skills.
+    Priority: Zapier MCP → Playwright live → Sandbox simulation.
     """
+    # 1. Try Zapier MCP first
+    zapier_result = _zapier_mcp_call("get_linkedin_profile", {"profile_url": profile_url or ""})
+    if zapier_result:
+        return json.dumps({"status": "SUCCESS", "mode": "ZAPIER_MCP", "profile": zapier_result})
+
+    # 2. Try Playwright browser with li_at cookie
     if LINKEDIN_LI_AT_COOKIE and not MCP_SIMULATION_FALLBACK:
         try:
             def _scrape(ctx):
@@ -149,16 +229,27 @@ def get_linkedin_profile(profile_url: Optional[str] = None) -> str:
         except Exception as e:
             return json.dumps({"status": "FALLBACK_SANDBOX", "warning": str(e), "profile": SANDBOX_PROFILE})
 
+    # 3. Sandbox fallback
     return json.dumps({"status": "SUCCESS", "mode": "SIMULATION_SANDBOX", "profile": SANDBOX_PROFILE})
 
 @server.tool()
 def list_recent_messages(limit: int = 10) -> str:
     """
     Lists recent LinkedIn direct messages and conversations from recruiters.
+    Priority: Zapier MCP → Sandbox simulation.
     """
+    # 1. Try Zapier MCP
+    zapier_result = _zapier_mcp_call("list_recent_messages", {"limit": limit})
+    if zapier_result:
+        messages = zapier_result.get("messages", zapier_result) if isinstance(zapier_result, dict) else zapier_result
+        if isinstance(messages, list):
+            return json.dumps({"status": "SUCCESS", "mode": "ZAPIER_MCP", "count": len(messages), "messages": messages})
+        return json.dumps({"status": "SUCCESS", "mode": "ZAPIER_MCP", "data": zapier_result})
+
+    # 2. Sandbox fallback
     return json.dumps({
         "status": "SUCCESS",
-        "mode": "LIVE_BROWSER" if LINKEDIN_LI_AT_COOKIE else "SIMULATION_SANDBOX",
+        "mode": "SIMULATION_SANDBOX",
         "count": len(SANDBOX_MESSAGES[:limit]),
         "messages": SANDBOX_MESSAGES[:limit]
     })
@@ -167,10 +258,20 @@ def list_recent_messages(limit: int = 10) -> str:
 def list_connection_requests(limit: int = 10) -> str:
     """
     Lists pending inbound connection requests, mutual connections, and invitation notes.
+    Priority: Zapier MCP → Sandbox simulation.
     """
+    # 1. Try Zapier MCP
+    zapier_result = _zapier_mcp_call("list_connection_requests", {"limit": limit})
+    if zapier_result:
+        connections = zapier_result.get("connections", zapier_result) if isinstance(zapier_result, dict) else zapier_result
+        if isinstance(connections, list):
+            return json.dumps({"status": "SUCCESS", "mode": "ZAPIER_MCP", "count": len(connections), "connections": connections})
+        return json.dumps({"status": "SUCCESS", "mode": "ZAPIER_MCP", "data": zapier_result})
+
+    # 2. Sandbox fallback
     return json.dumps({
         "status": "SUCCESS",
-        "mode": "LIVE_BROWSER" if LINKEDIN_LI_AT_COOKIE else "SIMULATION_SANDBOX",
+        "mode": "SIMULATION_SANDBOX",
         "count": len(SANDBOX_CONNECTIONS[:limit]),
         "connections": SANDBOX_CONNECTIONS[:limit]
     })
@@ -181,6 +282,7 @@ def send_connection_invite(profile_url: str, custom_note: str, approved: bool = 
     Sends a connection invite with personalized note.
     Validates note strictly against LinkedIn 300 character limit.
     Guarded by Human-In-The-Loop approval gate.
+    Priority: Zapier MCP → Sandbox simulation.
     """
     if len(custom_note) > 300:
         return json.dumps({
@@ -194,8 +296,20 @@ def send_connection_invite(profile_url: str, custom_note: str, approved: bool = 
             "error": "Safety guardrail active: Sending external LinkedIn connection invitations requires explicit approval."
         })
 
+    # 1. Try Zapier MCP (live send)
+    zapier_result = _zapier_mcp_call("send_connection_invite", {
+        "profile_url": profile_url, "custom_note": custom_note
+    })
+    if zapier_result:
+        return json.dumps({"status": "INVITATION_SENT", "mode": "ZAPIER_MCP",
+                           "recipient_url": profile_url, "character_count": len(custom_note),
+                           "note_preview": custom_note, "zapier_result": zapier_result,
+                           "sent_at": datetime.now(timezone.utc).isoformat()})
+
+    # 2. Sandbox simulation
     return json.dumps({
         "status": "INVITATION_SENT",
+        "mode": "SIMULATION_SANDBOX",
         "recipient_url": profile_url,
         "character_count": len(custom_note),
         "note_preview": custom_note,
@@ -207,6 +321,7 @@ def publish_post(text: str, visibility: str = "PUBLIC", approved: bool = False) 
     """
     Publishes an update/post to LinkedIn feed.
     Guarded by Human-In-The-Loop approval gate.
+    Priority: Zapier MCP → Sandbox simulation.
     """
     if not approved:
         return json.dumps({
@@ -214,10 +329,18 @@ def publish_post(text: str, visibility: str = "PUBLIC", approved: bool = False) 
             "error": "Safety guardrail active: Publishing LinkedIn posts externally requires explicit Human-In-The-Loop approval."
         })
 
+    # 1. Try Zapier MCP (live post)
+    zapier_result = _zapier_mcp_call("publish_post", {"text": text, "visibility": visibility})
+    if zapier_result:
+        return json.dumps({"status": "POSTED", "mode": "ZAPIER_MCP", "visibility": visibility,
+                           "text_preview": text[:120], "zapier_result": zapier_result,
+                           "published_at": datetime.now(timezone.utc).isoformat()})
+
+    # 2. Sandbox simulation
     post_id = f"urn:li:share:{uuid.uuid4().hex[:12]}"
     return json.dumps({
         "status": "POSTED",
-        "mode": "LIVE_BROWSER" if LINKEDIN_LI_AT_COOKIE else "SIMULATION_SANDBOX",
+        "mode": "SIMULATION_SANDBOX",
         "post_id": post_id,
         "visibility": visibility,
         "text_preview": text[:120],
@@ -366,12 +489,16 @@ def comment_on_post(post_url: str, comment_text: str, approved: bool = False) ->
 @server.tool()
 def get_linkedin_status() -> str:
     """
-    Returns LinkedIn MCP connection status, session cookie presence, and Playwright configuration.
+    Returns LinkedIn MCP connection status, including Zapier MCP server health check.
     """
     has_cookie = bool(LINKEDIN_LI_AT_COOKIE)
+    zapier_ok = _is_zapier_available()
+    mode = "ZAPIER_MCP" if zapier_ok else ("LIVE_BROWSER_SESSION" if has_cookie else "SIMULATION_SANDBOX")
     return json.dumps({
         "connected": True,
-        "mode": "LIVE_BROWSER_SESSION" if has_cookie else "SIMULATION_SANDBOX",
+        "mode": mode,
+        "zapier_mcp_active": zapier_ok,
+        "zapier_mcp_id": ZAPIER_LINKEDIN_MCP_ID,
         "session_cookie_configured": has_cookie,
         "headless": LINKEDIN_HEADLESS,
         "user_name": "Mohil",
