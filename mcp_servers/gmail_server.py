@@ -17,6 +17,8 @@ import sys
 import re
 import json
 import uuid
+import logging
+import requests
 import imaplib
 import smtplib
 import email
@@ -52,6 +54,7 @@ except (ImportError, ModuleNotFoundError):
 
 # Initialize MCP Server
 server = MCPServer("gmail-mcp")
+logger = logging.getLogger(__name__)
 
 # Configuration from environment or defaults
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "").strip()
@@ -59,6 +62,70 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").strip()
 
 GMAIL_CREDENTIALS_PATH = os.getenv("GMAIL_CREDENTIALS_PATH", "").strip()
 MCP_SIMULATION_FALLBACK = os.getenv("MCP_SIMULATION_FALLBACK", "true").lower() in ("true", "1", "yes")
+
+# Zapier MCP Mail Server Integration (live OAuth-backed actions)
+ZAPIER_GMAIL_MCP_URL = os.getenv(
+    "ZAPIER_GMAIL_MCP_URL",
+    "https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp"
+)
+ZAPIER_GMAIL_MCP_ID = os.getenv("ZAPIER_GMAIL_MCP_ID", "02750b42-81d6-8595-a28c-9aaadc202a9f")
+
+
+def _zapier_gmail_call(tool_name: str, arguments: dict = None, timeout: int = 15) -> Optional[Dict]:
+    """
+    Calls a tool on the Zapier-hosted Gmail/Mail MCP server via JSON-RPC 2.0 over HTTP.
+    Returns the parsed result dict on success, or None if the call fails.
+    """
+    payload = {
+        "jsonrpc": "2.0",
+        "id": str(uuid.uuid4()),
+        "method": "tools/call",
+        "params": {
+            "name": tool_name,
+            "arguments": arguments or {}
+        }
+    }
+    try:
+        resp = requests.post(
+            ZAPIER_GMAIL_MCP_URL,
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream"
+            },
+            timeout=timeout
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if "result" in data:
+                result = data["result"]
+                if isinstance(result, dict) and "content" in result:
+                    content = result["content"]
+                    if isinstance(content, list) and content:
+                        text = content[0].get("text", "")
+                        try:
+                            return json.loads(text)
+                        except (json.JSONDecodeError, TypeError):
+                            return {"raw": text}
+                return result
+    except Exception as e:
+        logger.debug("Zapier Gmail MCP call to %s note: %s", tool_name, str(e))
+    return None
+
+
+def _is_zapier_gmail_available() -> bool:
+    """Quick probe for Zapier Gmail MCP availability."""
+    try:
+        payload = {"jsonrpc": "2.0", "id": "ping", "method": "tools/list", "params": {}}
+        resp = requests.post(
+            ZAPIER_GMAIL_MCP_URL,
+            json=payload,
+            headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream"},
+            timeout=5
+        )
+        return resp.status_code == 200
+    except Exception:
+        return False
 
 # Sample sandbox emails for immediate testing and security verification
 SANDBOX_EMAILS = [
@@ -228,33 +295,18 @@ def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, A
             status, response = mail.search(None, search_criterion)
             if status != "OK" or not response[0]:
                 return []
-            email_ids = response[0].split()
-            email_ids = email_ids[-max_results:]
+            found_ids = response[0].split()
+            email_ids = found_ids[-max_results:]
             email_ids.reverse()
         else:
-            # First check for unread (UNSEEN) emails
-            status_unseen, response_unseen = mail.search(None, "UNSEEN")
-            unseen_ids = response_unseen[0].split() if (status_unseen == "OK" and response_unseen[0]) else []
-            
-            # Fetch recent from ALL to ensure latest emails are always present even if already opened
+            # In Gmail IMAP, message sequence numbers strictly ascend chronologically (highest = newest)
             status_all, response_all = mail.search(None, "ALL")
-            all_ids = response_all[0].split() if (status_all == "OK" and response_all[0]) else []
-            
-            # Take newest from ALL (highest sequence numbers in IMAP)
-            recent_all = all_ids[-max_results:] if all_ids else []
-            
-            # Combine unread + recent, keeping newest first without duplicates
-            combined = []
-            seen_set = set()
-            for eid in reversed(recent_all):
-                if eid not in seen_set:
-                    combined.append(eid)
-                    seen_set.add(eid)
-            for eid in reversed(unseen_ids):
-                if eid not in seen_set:
-                    combined.insert(0, eid)
-                    seen_set.add(eid)
-            email_ids = combined[:max_results]
+            if status_all != "OK" or not response_all[0]:
+                return []
+            all_ids = response_all[0].split()
+            # Highest sequence numbers are strictly the newest emails in Gmail
+            email_ids = all_ids[-max_results:]
+            email_ids.reverse()
         
         if not email_ids:
             return []
@@ -455,11 +507,14 @@ def get_mailbox_status() -> str:
     Returns current connection health, active authentication mode, and configured email address.
     """
     has_creds = bool(GMAIL_ADDRESS and GMAIL_APP_PASSWORD)
-    mode = "LIVE_GMAIL_IMAP" if has_creds else "SIMULATION_SANDBOX"
+    zapier_ok = _is_zapier_gmail_available()
+    mode = "ZAPIER_GMAIL_MCP" if zapier_ok else ("LIVE_GMAIL_IMAP" if has_creds else "SIMULATION_SANDBOX")
     return json.dumps({
         "connected": True,
         "mode": mode,
-        "configured_address": GMAIL_ADDRESS or "mohil@example.com (Sandbox)",
+        "zapier_mcp_active": zapier_ok,
+        "zapier_mcp_id": ZAPIER_GMAIL_MCP_ID,
+        "configured_address": GMAIL_ADDRESS or "mohilc24@gmail.com",
         "credentials_present": has_creds,
         "checked_at": datetime.now(timezone.utc).isoformat()
     })

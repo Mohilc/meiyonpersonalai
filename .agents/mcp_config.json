@@ -17,6 +17,10 @@
     "linkedin-zapier": {
       "url": "https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp",
       "type": "http"
+    },
+    "gmail-zapier": {
+      "url": "https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp",
+      "type": "http"
     }
   }
 }
