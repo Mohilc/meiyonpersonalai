@@ -21,6 +21,10 @@
     "gmail-zapier": {
       "url": "https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp",
       "type": "http"
+    },
+    "tasks-zapier": {
+      "url": "https://mcp.zapier.com/api/mcp/s/02292b48-0fbd-8ca5-88c8-021274846b43/mcp",
+      "type": "http"
     }
   }
 }

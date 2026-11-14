@@ -106,7 +106,10 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/email <1-5>` - Read full email body & details\n"
             "• `/reply <1-5>` - Stage AI email response with approval gate\n"
             "• `/linkedin` - Check LinkedIn messages & connection requests\n"
-            "• `/tasks` - View scheduled task commitments\n\n"
+            "• `/tasks` - View scheduled task commitments\n"
+            "• `/task add <Title> [| Due Date]` - Add new task commitment (Zapier synced)\n"
+            "• `/done <id>` - Mark a task as completed\n"
+            "• `/important <Title>: <Content>` - Mark & save critical data/fact\n\n"
             "🧠 *Self-Learning & Adaptive Persona:*\n"
             "• `/memory` - View everything I've learned about your habits & style\n"
             "• `/remember <text>` - Teach me a new rule (e.g. `/remember Call me bro and be casual`)\n"
@@ -442,15 +445,92 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             platform=platform
         )
 
-    if cmd in ("/tasks", "tasks"):
+    if cmd in ("/tasks", "tasks", "my tasks", "show tasks", "todo", "my todo"):
         tasks = task_service.list_tasks(status="PENDING")
         if not tasks:
-            return "📋 No pending tasks on your board right now."
-        lines = ["📋 *Active Commitments:*"]
-        for t in tasks[:5]:
-            due = f"(Due: {t.due_date[:10]})" if t.due_date else ""
-            lines.append(f"• *{t.title}* [{t.priority.value}] {due}")
+            return (
+                "📋 *Task Board:* Zero pending tasks right now! Clean slate.\n\n"
+                "💡 *Quick Actions:*\n"
+                "• Add task: `/task add <Title> [| YYYY-MM-DD | Notes]`\n"
+                "• Mark important data: `/important <Title>: <Content>`"
+            )
+        lines = [
+            f"📋 *Active Commitments & Tasks*",
+            f"• *Pending:* {len(tasks)} tasks on your board\n"
+        ]
+        for idx, t in enumerate(tasks[:7], 1):
+            due = f" • Due: `{t.due_date[:10]}`" if t.due_date else ""
+            pri_badge = "🔴 URGENT" if t.priority.value == "P1_URGENT" else ("🟡 HIGH" if t.priority.value == "P2_HIGH" else "🟢 NORMAL")
+            short_id = t.id[:8]
+            lines.append(f"*{idx}.* *{t.title}* [{pri_badge}]{due}\n   👉 Complete: `/done {short_id}`")
+        lines.append("\n💡 *Actions:* Reply `/task add <title>` to create a task, or `/done <id>` to complete one.")
         return "\n".join(lines)
+
+    # 2D. Task Creation, Completion & Important Data Routing
+    if cmd.startswith("/task add ") or cmd.startswith("add task: ") or cmd.startswith("task: ") or cmd.startswith("/todo "):
+        raw = clean_text
+        for pfx in ("/task add ", "add task: ", "task: ", "/todo "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        parts = [p.strip() for p in raw.split("|")]
+        title = parts[0]
+        due = parts[1] if len(parts) > 1 else None
+        notes = parts[2] if len(parts) > 2 else None
+        if title:
+            from mcp_servers import task_server
+            res_raw = task_server.create_task(title=title, description=notes or "", due_date=due or "", priority="P2_HIGH")
+            res = json.loads(res_raw)
+            due_str = f"\n• *Due:* `{due}`" if due else ""
+            zap_str = " (Synced to Zapier)" if res.get("zapier_synced") else ""
+            return (
+                f"✅ *Task Created!*{zap_str}\n"
+                f"• *Title:* {title}\n"
+                f"• *Priority:* `P2_HIGH`"
+                f"{due_str}\n"
+                f"• *ID:* `{res.get('task_id', '')[:8]}`\n\n"
+                f"💡 Type `/tasks` to view your board or `/done {res.get('task_id', '')[:8]}` when finished."
+            )
+
+    if cmd.startswith("/task done ") or cmd.startswith("/done ") or cmd.startswith("done: ") or cmd.startswith("complete task "):
+        raw = clean_text
+        for pfx in ("/task done ", "/done ", "done: ", "complete task "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        if raw:
+            from mcp_servers import task_server
+            res_raw = task_server.complete_task(raw)
+            res = json.loads(res_raw)
+            if res.get("status") in ("SUCCESS", "COMPLETED") or res.get("task_status") == "COMPLETED":
+                return f"🎉 *Task Completed!* [{res.get('task_id', '')[:8]}] *{res.get('title', '')}* marked as done!"
+            return f"❌ {res.get('error', 'Could not complete task.')}"
+
+    if cmd.startswith("/important ") or cmd.startswith("important: ") or cmd.startswith("mark important: ") or cmd.startswith("/note "):
+        raw = clean_text
+        for pfx in ("/important ", "important: ", "mark important: ", "/note "):
+            if raw.lower().startswith(pfx):
+                raw = raw[len(pfx):].strip()
+                break
+        if raw:
+            from mcp_servers import task_server
+            if ":" in raw:
+                title, content = [x.strip() for x in raw.split(":", 1)]
+            elif "|" in raw:
+                title, content = [x.strip() for x in raw.split("|", 1)]
+            else:
+                title = raw[:40]
+                content = raw
+            res_raw = task_server.mark_important_data(title=title, content=content)
+            res = json.loads(res_raw)
+            zap_str = " (Synced to Zapier Tasks)" if res.get("zapier_synced") else ""
+            return (
+                f"⭐ *Important Data Saved!*{zap_str}\n"
+                f"• *Title:* {title}\n"
+                f"• *Content:* _{content}_\n"
+                f"• *Status:* Saved to Active AI Memory & Urgent Priorities (P1_URGENT)\n\n"
+                f"This will now be surfaced in your daily morning briefings and AI context!"
+            )
 
     # 3. College Attendance & Academic Commands
     is_attendance_query = (

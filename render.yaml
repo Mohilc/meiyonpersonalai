@@ -72,6 +72,11 @@ services:
       # LinkedIn MCP
       - key: LINKEDIN_LI_AT_COOKIE
         sync: false
+      # Zapier Tasks & Important Data MCP
+      - key: ZAPIER_TASKS_MCP_ID
+        sync: false
+      - key: ZAPIER_TASKS_MCP_URL
+        sync: false
       # WhatsApp / Twilio (optional)
       - key: WHATSAPP_ENABLED
         sync: false

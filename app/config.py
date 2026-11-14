@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     ZAPIER_GMAIL_MCP_ID: str = "02750b42-81d6-8595-a28c-9aaadc202a9f"
     ZAPIER_GMAIL_MCP_URL: str = "https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp"
 
+    # Zapier MCP Tasks & Important Data Integration
+    ZAPIER_TASKS_MCP_ID: str = "02292b48-0fbd-8ca5-88c8-021274846b43"
+    ZAPIER_TASKS_MCP_URL: str = "https://mcp.zapier.com/api/mcp/s/02292b48-0fbd-8ca5-88c8-021274846b43/mcp"
+
     # Messaging Integrations: Telegram & WhatsApp
     TELEGRAM_ENABLED: bool = True
     TELEGRAM_BOT_TOKEN: str = ""

@@ -306,9 +306,18 @@ def compile_learned_prompt_instructions() -> str:
 
 def _row_to_memory(row: Any) -> LearnedMemory:
     """Helper to convert sqlite3.Row to LearnedMemory model."""
+    raw_category = row["category"]
+    if raw_category in ("FACT", "FACTS"):
+        category_enum = MemoryCategoryEnum.FACTUAL_KNOWLEDGE
+    else:
+        try:
+            category_enum = MemoryCategoryEnum(raw_category)
+        except ValueError:
+            category_enum = MemoryCategoryEnum.FACTUAL_KNOWLEDGE
+
     return LearnedMemory(
         id=row["id"],
-        category=MemoryCategoryEnum(row["category"]),
+        category=category_enum,
         key=row["key"],
         content=row["content"],
         source=MemorySourceEnum(row["source"]),
