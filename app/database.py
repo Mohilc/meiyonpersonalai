@@ -250,6 +250,30 @@ def init_db():
         except Exception:
             pass
 
+        # Cleanup mock test fixtures from live database
+        try:
+            bad_senders = ("attacker@malicious.xyz", "google-recruiter-hiring@gmail.com", "careers@anthropic.com", "unknown@sender.com")
+            conn.execute(f"DELETE FROM email_messages WHERE external_id IS NULL AND sender IN {bad_senders};")
+        except Exception:
+            pass
+
+        # Normalize any RFC 2822 dates in email_messages to ISO 8601 for accurate chronological ordering
+        try:
+            from email.utils import parsedate_to_datetime
+            unnormalized = conn.execute("SELECT id, received_at FROM email_messages WHERE received_at NOT LIKE '20%';").fetchall()
+            for r in unnormalized:
+                raw_dt = r["received_at"]
+                if raw_dt:
+                    try:
+                        dt = parsedate_to_datetime(raw_dt)
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=timezone.utc)
+                        conn.execute("UPDATE email_messages SET received_at = ? WHERE id = ?;", (dt.isoformat(), r["id"]))
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
 
         # Seed profile if empty
         cur = conn.execute("SELECT id FROM user_profile WHERE id = 1;")

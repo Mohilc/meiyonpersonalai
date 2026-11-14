@@ -235,13 +235,28 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         ]
         for idx, e in enumerate(emails, 1):
             risk_badge = f"[{e.phishing_risk.value}]" if e.phishing_risk.value != "LOW" else "✅ Verified"
-            clean_snippet = e.body.replace("\n", " ").strip()
-            if len(clean_snippet) > 120:
-                clean_snippet = clean_snippet[:117] + "..."
-            short_id = e.id[:8]
+            clean_snippet = re.sub(r"[\r\n\t]+", " ", e.body).strip()
+            if len(clean_snippet) > 110:
+                clean_snippet = clean_snippet[:107] + "..."
+            clean_sender = re.sub(r"[\r\n\t]+", " ", e.sender).strip()
+            clean_subject = re.sub(r"[\r\n\t]+", " ", e.subject).strip()
+            
+            # Format human-readable date/time
+            date_display = ""
+            if e.received_at:
+                try:
+                    if "T" in e.received_at:
+                        dt = datetime.fromisoformat(e.received_at.replace("Z", "+00:00"))
+                    else:
+                        from email.utils import parsedate_to_datetime
+                        dt = parsedate_to_datetime(e.received_at)
+                    date_display = f" • _{dt.strftime('%d %b, %H:%M')}_"
+                except Exception:
+                    date_display = f" • _{e.received_at[:10]}_"
+
             lines.append(
-                f"*{idx}.* *From:* {e.sender}\n"
-                f"   *Subject:* {e.subject}\n"
+                f"*{idx}.* *From:* `{clean_sender}`{date_display}\n"
+                f"   *Subject:* {clean_subject}\n"
                 f"   *Status:* {risk_badge} ({e.detected_intent.value})\n"
                 f"   *Snippet:* _{clean_snippet}_\n"
                 f"   👉 Read: `/email {idx}` | Reply: `/reply {idx}`\n"

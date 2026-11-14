@@ -23,6 +23,7 @@ import email
 from email.header import decode_header
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
@@ -191,8 +192,29 @@ def _extract_email_body(msg: email.message.Message) -> str:
         body = _clean_html_to_text(html_fallback)
     return body.strip()
 
+def _clean_header(header_value: Optional[str]) -> str:
+    """Decodes MIME encoded header and strips CRLF folding and redundant whitespace."""
+    if not header_value:
+        return ""
+    decoded = _decode_mime_header(header_value)
+    clean = re.sub(r"[\r\n\t]+", " ", decoded)
+    clean = re.sub(r" +", " ", clean)
+    return clean.strip()
+
+def _parse_email_date(date_str: Optional[str]) -> str:
+    """Parses RFC 2822 / MIME date header into ISO 8601 format."""
+    if date_str:
+        try:
+            dt = parsedate_to_datetime(date_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.isoformat()
+        except Exception:
+            pass
+    return datetime.now(timezone.utc).isoformat()
+
 def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, Any]]:
-    """Fetches real unread emails from Gmail via SSL IMAP."""
+    """Fetches real incoming/recent emails from Gmail via SSL IMAP."""
     results = []
     clean_password = GMAIL_APP_PASSWORD.replace(" ", "")
     
@@ -201,45 +223,75 @@ def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, A
         mail.login(GMAIL_ADDRESS, clean_password)
         mail.select("INBOX")
         
-        search_criterion = "UNSEEN"
         if query:
-            search_criterion = f'(UNSEEN TEXT "{query}")'
+            search_criterion = f'(TEXT "{query}")'
+            status, response = mail.search(None, search_criterion)
+            if status != "OK" or not response[0]:
+                return []
+            email_ids = response[0].split()
+            email_ids = email_ids[-max_results:]
+            email_ids.reverse()
+        else:
+            # First check for unread (UNSEEN) emails
+            status_unseen, response_unseen = mail.search(None, "UNSEEN")
+            unseen_ids = response_unseen[0].split() if (status_unseen == "OK" and response_unseen[0]) else []
             
-        status, response = mail.search(None, search_criterion)
-        if status != "OK" or not response[0]:
+            # Fetch recent from ALL to ensure latest emails are always present even if already opened
+            status_all, response_all = mail.search(None, "ALL")
+            all_ids = response_all[0].split() if (status_all == "OK" and response_all[0]) else []
+            
+            # Take newest from ALL (highest sequence numbers in IMAP)
+            recent_all = all_ids[-max_results:] if all_ids else []
+            
+            # Combine unread + recent, keeping newest first without duplicates
+            combined = []
+            seen_set = set()
+            for eid in reversed(recent_all):
+                if eid not in seen_set:
+                    combined.append(eid)
+                    seen_set.add(eid)
+            for eid in reversed(unseen_ids):
+                if eid not in seen_set:
+                    combined.insert(0, eid)
+                    seen_set.add(eid)
+            email_ids = combined[:max_results]
+        
+        if not email_ids:
             return []
             
-        email_ids = response[0].split()
-        # Fetch the most recent first
-        email_ids = email_ids[-max_results:]
-        email_ids.reverse()
-        
         for e_id in email_ids:
-            res_status, data = mail.fetch(e_id, "(BODY.PEEK[])")
+            res_status, data = mail.fetch(e_id, "(FLAGS BODY.PEEK[])")
             if res_status != "OK" or not data:
                 continue
+            flags_str = ""
+            msg = None
             for part in data:
-                if isinstance(part, tuple):
-                    raw_email = part[1]
-                    msg = email.message_from_bytes(raw_email)
-                    
-                    subject = _decode_mime_header(msg.get("Subject", "(No Subject)"))
-                    sender = _decode_mime_header(msg.get("From", "unknown"))
-                    date_str = msg.get("Date", "")
-                    
-                    # Extract body with full HTML fallback support
-                    body = _extract_email_body(msg)
-                            
-                    results.append({
-                        "id": f"imap_{e_id.decode('utf-8', errors='ignore')}",
-                        "thread_id": f"thread_{e_id.decode('utf-8', errors='ignore')}",
-                        "sender": sender,
-                        "recipient": GMAIL_ADDRESS,
-                        "subject": subject,
-                        "date": date_str or datetime.now(timezone.utc).isoformat(),
-                        "snippet": body[:120].strip() if body else "(No content)",
-                        "body": body.strip() or "(No readable text content)"
-                    })
+                if isinstance(part, tuple) and len(part) >= 2:
+                    flags_str = str(part[0])
+                    msg = email.message_from_bytes(part[1])
+                    break
+            if not msg:
+                continue
+                
+            subject = _clean_header(msg.get("Subject", "(No Subject)"))
+            sender = _clean_header(msg.get("From", "unknown"))
+            date_str = msg.get("Date", "")
+            iso_date = _parse_email_date(date_str)
+            body = _extract_email_body(msg)
+            clean_snippet = re.sub(r"[\r\n\t]+", " ", body[:150]).strip()
+            is_unread = "\\Seen" not in flags_str
+            
+            results.append({
+                "id": f"imap_{e_id.decode('utf-8', errors='ignore')}",
+                "thread_id": f"thread_{e_id.decode('utf-8', errors='ignore')}",
+                "sender": sender,
+                "recipient": GMAIL_ADDRESS,
+                "subject": subject,
+                "date": iso_date,
+                "snippet": clean_snippet or "(No content)",
+                "body": body.strip() or "(No readable text content)",
+                "is_unread": is_unread
+            })
         return results
     finally:
         try:
@@ -300,10 +352,12 @@ def read_email(message_id: str) -> str:
                     if isinstance(part, tuple):
                         raw_email = part[1]
                         msg = email.message_from_bytes(raw_email)
-                        subject = _decode_mime_header(msg.get("Subject", "(No Subject)"))
-                        sender = _decode_mime_header(msg.get("From", "unknown"))
+                        subject = _clean_header(msg.get("Subject", "(No Subject)"))
+                        sender = _clean_header(msg.get("From", "unknown"))
                         date_str = msg.get("Date", "")
+                        iso_date = _parse_email_date(date_str)
                         body = _extract_email_body(msg)
+                        clean_snippet = re.sub(r"[\r\n\t]+", " ", body[:150]).strip()
                         try:
                             mail.close()
                             mail.logout()
@@ -317,8 +371,8 @@ def read_email(message_id: str) -> str:
                                 "sender": sender,
                                 "recipient": GMAIL_ADDRESS,
                                 "subject": subject,
-                                "date": date_str or datetime.now(timezone.utc).isoformat(),
-                                "snippet": body[:120].strip() if body else "(No content)",
+                                "date": iso_date,
+                                "snippet": clean_snippet or "(No content)",
                                 "body": body.strip() or "(No readable text content)"
                             }
                         })
