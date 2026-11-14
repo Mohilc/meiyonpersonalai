@@ -53,8 +53,8 @@ def add_conversation_turn(sender_id: str, user_text: str, assistant_text: str) -
         _CONVERSATION_HISTORY[sid] = []
     _CONVERSATION_HISTORY[sid].append({"role": "user", "content": user_text})
     _CONVERSATION_HISTORY[sid].append({"role": "assistant", "content": assistant_text})
-    if len(_CONVERSATION_HISTORY[sid]) > 10:
-        _CONVERSATION_HISTORY[sid] = _CONVERSATION_HISTORY[sid][-10:]
+    if len(_CONVERSATION_HISTORY[sid]) > 20:
+        _CONVERSATION_HISTORY[sid] = _CONVERSATION_HISTORY[sid][-20:]
 
 # Comprehensive LinkedIn URL patterns supporting international subdomains (in.linkedin.com, etc.),
 # missing schemes (linkedin.com/in/...), and tracking query parameters (?utm_source=...)
@@ -944,8 +944,8 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         system_prompt=system_prompt,
         conversation_history=history,
         task_type="general",
-        max_tokens=400,
-        temperature=0.6
+        max_tokens=600,
+        temperature=0.75
     )
     final_reply = prefix_ack + (ai_response or llm_service.generate_contextual_fallback(clean_text, candidate_name=profile.full_name))
     
