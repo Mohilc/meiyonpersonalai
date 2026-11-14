@@ -1,5 +1,6 @@
 """REST API endpoints for Supabase Cloud Storage & Database Persistence."""
 from typing import Optional, List, Dict, Any
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
@@ -33,14 +34,17 @@ def trigger_cloud_backup():
 
 @router.post("/restore")
 def trigger_cloud_restore(remote_path: str = "backups/latest.db"):
-    """Restores local database from a Supabase cloud snapshot."""
-    success = supabase_service.restore_database_from_cloud(remote_path=remote_path)
+    """Restores local database from a Supabase cloud snapshot with path traversal defense."""
+    safe_remote = Path(remote_path).as_posix().lstrip("/")
+    if ".." in safe_remote or not safe_remote.endswith(".db"):
+        raise HTTPException(status_code=400, detail="Invalid cloud backup path.")
+    success = supabase_service.restore_database_from_cloud(remote_path=safe_remote)
     if not success:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to restore database from Supabase cloud path '{remote_path}'"
+            detail=f"Failed to restore database from Supabase cloud path '{safe_remote}'"
         )
-    return {"message": f"Database successfully restored from Supabase snapshot '{remote_path}'"}
+    return {"message": f"Database successfully restored from Supabase snapshot '{safe_remote}'"}
 
 
 @router.get("/files")
@@ -58,10 +62,12 @@ async def upload_file_to_supabase(
     import tempfile
     from pathlib import Path
 
-    clean_folder = folder.strip("/").strip()
-    dest_path = f"{clean_folder}/{file.filename}" if clean_folder else file.filename
+    safe_filename = Path(file.filename or "upload.bin").name
+    clean_folder = folder.strip("/").strip().replace("..", "").replace("\\", "/")
+    clean_folder = "/".join(part for part in clean_folder.split("/") if part and part != ".")
+    dest_path = f"{clean_folder}/{safe_filename}" if clean_folder else safe_filename
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{safe_filename}") as tmp:
         contents = await file.read()
         tmp.write(contents)
         tmp_path = Path(tmp.name)

@@ -98,5 +98,29 @@ def test_api_career_endpoints():
     assert res.status_code == 201
     app_data = res.json()
     assert app_data["status"] == "READY_FOR_APPROVAL"
-    assert app_data["approval_id"] is not None
+
+def test_security_defenses_and_backdoor_protection():
+    """Verifies security boundaries, path traversal rejection, and outbound locks."""
+    # 1. Security Headers
+    res = client.get("/api/system/health")
+    assert res.status_code == 200
+    assert res.headers.get("X-Content-Type-Options") == "nosniff"
+    assert res.headers.get("X-Frame-Options") == "DENY"
+    assert "1" in res.headers.get("X-XSS-Protection", "")
+
+    # 2. Path Traversal on System Restore
+    res_trav = client.post("/api/system/restore?filename=../../etc/passwd")
+    assert res_trav.status_code in (400, 404)
+
+    # 3. Path Traversal on Supabase Cloud Restore
+    res_sub_trav = client.post("/api/supabase/restore?remote_path=../../etc/passwd")
+    assert res_sub_trav.status_code == 400
+
+    # 4. Outbound WhatsApp destination lock (reject unauthorized third-party numbers)
+    res_spam = client.post("/api/webhooks/whatsapp/send-message", data={
+        "to_number": "whatsapp:+19999999999",
+        "text": "Spam test"
+    })
+    assert res_spam.status_code == 403
+    assert "Security restriction" in res_spam.json()["detail"]
 

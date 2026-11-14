@@ -82,9 +82,13 @@ def list_backups():
 
 @router.post("/restore")
 def restore_from_backup(filename: str = Query(...)):
-    """Restores database from specified backup filename."""
-    backup_file = settings.BACKUP_DIR / filename
-    if not backup_file.exists():
+    """Restores database from specified backup filename with strict path traversal defense."""
+    safe_name = Path(filename).name
+    backup_file = (settings.BACKUP_DIR / safe_name).resolve()
+
+    if not str(backup_file).startswith(str(settings.BACKUP_DIR.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid backup file path.")
+    if not safe_name.endswith(".db") or not backup_file.is_file():
         raise HTTPException(status_code=404, detail="Specified backup file not found")
         
     try:

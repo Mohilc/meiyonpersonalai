@@ -24,7 +24,11 @@ PROMPT_INJECTION_PATTERNS = [
     r"you\s+are\s+now\s+in\s+developer\s+mode",
     r"reveal\s+(all\s+)?(api\s+keys|secrets|passwords)",
     r"disregard\s+security\s+rules",
-    r"delete\s+all\s+(data|files|tables)"
+    r"delete\s+all\s+(data|files|tables)",
+    r"bypass\s+(safety|security|content)\s+filters?",
+    r"(print|repeat|output|show)\s+(your\s+)?(system\s+prompt|hidden\s+instructions)",
+    r"you\s+are\s+dan",
+    r"jailbreak\s+mode"
 ]
 
 PHISHING_SCAM_PATTERNS = [

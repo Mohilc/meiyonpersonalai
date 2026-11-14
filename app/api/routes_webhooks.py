@@ -1,6 +1,6 @@
 """Webhook endpoints for Telegram and WhatsApp live messaging."""
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, Request, Response, Form, Header
+from fastapi import APIRouter, Request, Response, Form, Header, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from app.config import settings
@@ -71,7 +71,15 @@ async def trigger_whatsapp_template(
     to_number: str = "whatsapp:+918590144798",
     content_sid: Optional[str] = None
 ):
-    """Triggers outbound WhatsApp template message using Twilio Content Template SID."""
+    """Triggers outbound WhatsApp template message using Twilio Content Template SID (restricted to owner)."""
+    target_clean = to_number.replace("whatsapp:", "").strip().lstrip("+")
+    allowed_clean = (settings.WHATSAPP_ALLOWED_NUMBER or "+918590144798").replace("whatsapp:", "").strip().lstrip("+")
+    if target_clean != allowed_clean:
+        raise HTTPException(
+            status_code=403,
+            detail="Security restriction: Outbound messages can only be sent to the verified executive owner's WhatsApp number."
+        )
+
     result = messaging_bot_service.dispatch_whatsapp_with_sid(
         to_number=to_number,
         content_sid=content_sid
@@ -81,10 +89,18 @@ async def trigger_whatsapp_template(
 
 @router.post("/whatsapp/send-message")
 async def trigger_whatsapp_message(
-    to_number: str = "whatsapp:+918590144798",
+    to_number: str = Form("whatsapp:+918590144798"),
     text: str = Form(...)
 ):
-    """Dispatches a direct text message via WhatsApp using Twilio API."""
+    """Dispatches a direct text message via WhatsApp using Twilio API (restricted to owner)."""
+    target_clean = to_number.replace("whatsapp:", "").strip().lstrip("+")
+    allowed_clean = (settings.WHATSAPP_ALLOWED_NUMBER or "+918590144798").replace("whatsapp:", "").strip().lstrip("+")
+    if target_clean != allowed_clean:
+        raise HTTPException(
+            status_code=403,
+            detail="Security restriction: Outbound messages can only be sent to the verified executive owner's WhatsApp number."
+        )
+
     success = messaging_bot_service.send_whatsapp_message(to_number=to_number, text=text)
     return {
         "success": success,

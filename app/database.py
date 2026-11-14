@@ -253,7 +253,8 @@ def init_db():
         # Cleanup mock test fixtures from live database
         try:
             bad_senders = ("attacker@malicious.xyz", "google-recruiter-hiring@gmail.com", "careers@anthropic.com", "unknown@sender.com")
-            conn.execute(f"DELETE FROM email_messages WHERE external_id IS NULL AND sender IN {bad_senders};")
+            placeholders = ",".join("?" for _ in bad_senders)
+            conn.execute(f"DELETE FROM email_messages WHERE external_id IS NULL AND sender IN ({placeholders});", bad_senders)
         except Exception:
             pass
 

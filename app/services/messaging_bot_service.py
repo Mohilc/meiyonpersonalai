@@ -123,6 +123,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             "• `/search <query>` - Real-time Google search (e.g. `/search latest edge AI drone models`)\n"
             "• `/learnweb <topic>` - Research topic on Google & record facts to memory\n\n"
             "💬 *Or just chat naturally!* E.g. 'Be more friendly', 'Remember I have test on Friday', 'What emails do I have?', or 'Send my attendance pdf'."
+            + (f"\n\n🔐 *Security Guard:* Your Telegram Chat ID is `{sender_id}`. Set `TELEGRAM_ALLOWED_CHAT_ID={sender_id}` in your environment to lock access exclusively to your account." if platform == "telegram" and not settings.TELEGRAM_ALLOWED_CHAT_ID else "")
         )
 
     if cmd in ("/memory", "/learned", "memory", "learned", "my memory", "what have you learned") or any(p in cmd for p in ("what do you remember", "what have you learned", "show your memory", "show my memory", "show learned rules", "memory bank")):
