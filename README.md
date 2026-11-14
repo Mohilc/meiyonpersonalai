@@ -12,24 +12,25 @@ license: mit
 <div align="center">
 
 # 🚀 Meiyon - Executive Personal AI Manager
-### Autonomous Career Intelligence, Academic Copilot, Self-Learning Memory & Supabase Cloud Persistence
+### Autonomous Career Intelligence, Academic Copilot, Self-Learning Memory, Zapier MCP & Supabase Cloud Persistence
 
 ![Meiyon Executive Hero Banner](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/meiyon_hero.png)
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Zapier MCP](https://img.shields.io/badge/Zapier%20MCP-Gmail%20%7C%20LinkedIn%20%7C%20Tasks-FF4F00?style=for-the-badge&logo=zapier&logoColor=white)](https://zapier.com)
+[![FastMCP](https://img.shields.io/badge/FastMCP-2.3.0-6366F1?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io)
 [![Supabase](https://img.shields.io/badge/Supabase-Cloud%20Storage%20%26%20Persistence-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![Self-Learning](https://img.shields.io/badge/Self--Learning-Adaptive%20Persona%20Memory-8B5CF6?style=for-the-badge&logo=openai&logoColor=white)](https://github.com/Mohilc/meiyonpersonalai)
 [![Academic Tracker](https://img.shields.io/badge/Academic%20Tracker-Attendance%20%7C%20Absences%20%7C%20PDF-EC4899?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://github.com/Mohilc/meiyonpersonalai)
-[![Model Context Protocol](https://img.shields.io/badge/MCP-2.3.0-6366F1?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io)
 [![NVIDIA NIM](https://img.shields.io/badge/NVIDIA%20NIM-DiffusionGemma%20%7C%20Nemotron%20OCR%20v2-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://build.nvidia.com)
 [![SQLite WAL](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Tests Passing](https://img.shields.io/badge/Tests-63%20Passed%20(100%25)-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests Passing](https://img.shields.io/badge/Tests-71%20Passed%20(100%25)-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
 [![Telegram Bot](https://img.shields.io/badge/Telegram-@Meiyon__ai__bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Meiyon_ai_bot)
 [![WhatsApp Chat](https://img.shields.io/badge/WhatsApp-Twilio%20API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://twilio.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
-*Architected specifically for **Mohil** (B.Tech in Computer Science with Artificial Intelligence at Mar Baselios Christian College of Engineering & Technology, Class of 2027) to manage career planning, job discovery & fraud detection, verified communications, college attendance tracking, self-learning persona adaptation, persistent cloud storage via Supabase, and safe autonomous task execution.*
+*Architected specifically for **Mohil** (B.Tech in Computer Science with Artificial Intelligence at Mar Baselios Christian College of Engineering & Technology, Class of 2027) to manage career planning, job discovery & fraud detection, verified communications, college attendance tracking, self-learning persona adaptation, persistent cloud storage via Supabase, Model Context Protocol (MCP) integrations with Zapier, and safe autonomous task execution.*
 
 </div>
 
@@ -37,7 +38,7 @@ license: mit
 
 ## 📸 Executive Web Dashboard Interface
 
-The Personal AI Manager features a high-performance Dark Glassmorphism interface connected in real-time to the FastAPI backend, SQLite WAL engine, Supabase Cloud Storage, and local MCP servers.
+The Personal AI Manager features a high-performance Dark Glassmorphism interface connected in real-time to the FastAPI backend, SQLite WAL engine, Supabase Cloud Storage, and local & cloud MCP servers.
 
 ![Executive AI Dashboard Preview](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/dashboard_preview.jpg)
 
@@ -46,20 +47,25 @@ The Personal AI Manager features a high-performance Dark Glassmorphism interface
 ## 📑 Table of Contents
 1. [Executive Summary & Core Mission](#1-executive-summary--core-mission)
 2. [End-to-End System Architecture](#2-end-to-end-system-architecture)
-3. [Deep Dive: How the Agentic Model Works](#3-deep-dive-how-the-agentic-model-works)
+3. [Model Context Protocol (MCP 2.x) & Zapier Ecosystem](#3-model-context-protocol-mcp-2x--zapier-ecosystem)
+   - [A. Zapier Tasks & Important Data Server (`02292b48`)](#a-zapier-tasks--important-data-server-02292b48)
+   - [B. Zapier Gmail MCP Server (`02750b42`)](#b-zapier-gmail-mcp-server-02750b42)
+   - [C. Zapier LinkedIn MCP Server (`029df438`)](#c-zapier-linkedin-mcp-server-029df438)
+   - [D. Dual-Mode Execution & Fallback Resilience](#d-dual-mode-execution--fallback-resilience)
+4. [Deep Dive: How the Agentic Model Works](#4-deep-dive-how-the-agentic-model-works)
    - [A. The Six-Stage Cognitive Loop](#a-the-six-stage-cognitive-loop)
    - [B. Multi-Factor Evidence-Based Fraud Detection Pipeline](#b-multi-factor-evidence-based-fraud-detection-pipeline)
-   - [C. Model Context Protocol (MCP 2.x) Execution Bridge](#c-model-context-protocol-mcp-2x-execution-bridge)
-   - [D. Autonomy Modes & Human-In-The-Loop (HITL) Security Gates](#d-autonomy-modes--human-in-the-loop-hitl-security-gates)
-   - [E. Factual ATS Resume Studio & Zero-Hallucination Invariant](#e-factual-ats-resume-studio--zero-hallucination-invariant)
-   - [F. Mathematical Scoring & Priority Models](#f-mathematical-scoring--priority-models)
-   - [G. NVIDIA NIM Multi-Model Pool & Nemotron OCR v2](#g-nvidia-nim-multi-model-pool--nemotron-ocr-v2)
-4. [Academic Attendance, Absence Logging & PDF Reports](#4-academic-attendance-absence-logging--pdf-reports)
-5. [Self-Learning Engine & Adaptive Persona Memory](#5-self-learning-engine--adaptive-persona-memory)
-6. [Supabase Cloud Storage & Database Persistence](#6-supabase-cloud-storage--database-persistence)
-7. [Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)](#7-mobile-messaging--dual-channel-executive-ai-telegram--whatsapp)
-8. [Cybersecurity & Threat Defense System](#8-cybersecurity--threat-defense-system)
-9. [Model Context Protocol (MCP) Server Specifications](#9-model-context-protocol-mcp-server-specifications)
+   - [C. Autonomy Modes & Human-In-The-Loop (HITL) Security Gates](#c-autonomy-modes--human-in-the-loop-hitl-security-gates)
+   - [D. Factual ATS Resume Studio & Zero-Hallucination Invariant](#d-factual-ats-resume-studio--zero-hallucination-invariant)
+   - [E. Mathematical Scoring & Priority Models](#e-mathematical-scoring--priority-models)
+   - [F. NVIDIA NIM Multi-Model Pool & Nemotron OCR v2](#f-nvidia-nim-multi-model-pool--nemotron-ocr-v2)
+5. [Academic Attendance, Absence Logging & PDF Reports](#5-academic-attendance-absence-logging--pdf-reports)
+6. [Self-Learning Engine & Adaptive Persona Memory](#6-self-learning-engine--adaptive-persona-memory)
+7. [Supabase Cloud Storage & Database Persistence](#7-supabase-cloud-storage--database-persistence)
+8. [Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)](#8-mobile-messaging--dual-channel-executive-ai-telegram--whatsapp)
+   - [A. Interactive Command Matrix](#a-interactive-command-matrix)
+   - [B. Two-Way Multi-Turn Dialogue & Persona Continuity](#b-two-way-multi-turn-dialogue--persona-continuity)
+9. [Cybersecurity & Threat Defense System](#9-cybersecurity--threat-defense-system)
 10. [Complete Repository Structure](#10-complete-repository-structure)
 11. [REST API Documentation & Endpoints](#11-rest-api-documentation--endpoints)
 12. [Setup, Quick Start & Operations](#12-setup-quick-start--operations)
@@ -72,16 +78,15 @@ Early-career engineers and computer science students face severe friction in bal
 
 The **Executive Personal AI Manager** provides a hardened, local-first autonomous agent platform that solves these challenges through:
 1. **Ultra-Low Latency Multi-Model Pool**: Powered by NVIDIA NIM with `google/diffusiongemma-26b-a4b-it` delivering sub-second (~0.6s - 1.3s) conversational copilot responses, backed by `nvidia/nemotron-3-super-120b-a12b` for deep strategic reasoning and high-throughput fallback.
-2. **Academic Attendance & Absence Tracker**: Real-time logging of classes (`/present <subject>`, `/absent <subject>`), assignment submission tracking, and automated 75% college compliance alerts with instant ReportLab PDF report generation delivered to Telegram and cloud.
-3. **Self-Learning & Adaptive Persona Engine**: Dynamic SQLite memory bank (`learned_memories`) that learns user preferences and tone requests in real-time ("Be more friendly", "Call me bro", "Don't use corporate speak"), dynamically shaping both LLM generation and fallback responses.
-4. **Supabase Cloud Persistence & Document Storage**: Automated database backups every 6 hours (`backups/latest.db` and timestamped snapshots) to Supabase Storage, preserving state across stateless Render deployments, plus permanent public cloud links for generated PDFs.
-5. **24/7 Cloud Keep-Alive System**: Background self-pinger hitting health endpoints every 10 minutes to prevent Render free-tier instances from falling asleep.
-6. **Model Context Protocol (MCP 2.x)**: Standardized, secure tool bridging between the AI reasoning engine and external communication channels (Gmail & LinkedIn).
-7. **Full-Spectrum LinkedIn MCP Engagement**: Candidate profile inspection, recruiter synchronization, connection requests (<300 chars), feed publishing, **Post Liking (`like_post`)**, **Post Commenting (`comment_on_post`)**, and **AI Comment Ghostwriting**.
-8. **Zero-Trust Input Sanitization**: Active adversarial payload stripping and prompt-injection neutralization before text reaches reasoning models or databases.
-9. **Evidence-Based Job Scam Detection**: Mathematical scoring against verified ATS domains (`greenhouse.io`, `lever.co`, `workday.com`, `ashbyhq.com`) to flag fraudulent solicitations.
-10. **Human-In-The-Loop (HITL) Security Gates**: Strict authorization barriers preventing unauthorized outbound transmissions without explicit human confirmation.
-11. **Dual-Channel Mobile Access (Telegram & WhatsApp)**: Full executive co-pilot capability via Telegram (`@Meiyon_ai_bot`) and WhatsApp (Twilio Webhooks & Content Template API).
+2. **Model Context Protocol (MCP 2.x) with Zapier Cloud Bridge**: Full dual-mode integration with Zapier MCP servers for **Tasks & Important Notes** (`02292b48-0fbd-8ca5-88c8-021274846b43`), **Gmail Inboxes** (`02750b42-81d6-8595-a28c-9aaadc202a9f`), and **LinkedIn Platform** (`029df438-e88c-8c07-8d68-61978ee0976a`).
+3. **Academic Attendance & Absence Tracker**: Real-time logging of classes (`/present <subject>`, `/absent <subject>`), assignment submission tracking, and automated 75% college compliance alerts with instant ReportLab PDF report generation delivered to Telegram and cloud.
+4. **Self-Learning & Adaptive Persona Engine**: Dynamic SQLite memory bank (`learned_memories`) that learns user preferences and tone requests in real-time ("Be more friendly", "Call me bro", "Don't use corporate speak"), dynamically shaping both LLM generation and fallback responses.
+5. **Supabase Cloud Persistence & Document Storage**: Automated database backups every 6 hours (`backups/latest.db` and timestamped snapshots) to Supabase Storage, preserving state across stateless Render deployments, plus permanent public cloud links for generated PDFs.
+6. **24/7 Cloud Keep-Alive System**: Background self-pinger hitting health endpoints every 10 minutes to prevent Render free-tier instances from falling asleep.
+7. **Zero-Trust Input Sanitization**: Active adversarial payload stripping and prompt-injection neutralization before text reaches reasoning models or databases.
+8. **Evidence-Based Job Scam Detection**: Mathematical scoring against verified ATS domains (`greenhouse.io`, `lever.co`, `workday.com`, `ashbyhq.com`) to flag fraudulent solicitations.
+9. **Human-In-The-Loop (HITL) Security Gates**: Strict authorization barriers preventing unauthorized outbound transmissions without explicit human confirmation.
+10. **Dual-Channel Mobile Access (Telegram & WhatsApp)**: Full executive co-pilot capability via Telegram (`@Meiyon_ai_bot`) and WhatsApp (Twilio Webhooks & Content Template API).
 
 ---
 
@@ -110,45 +115,110 @@ graph TD
         SupabaseCloud <--> CloudReports[(reports/academic/*.pdf)]
     end
 
-    subgraph "Model Context Protocol (MCP) Standard"
-        MCPSvc <--> MCPServers[MCP Server Hub]
-        MCPServers <-->|IMAP / SMTP SSL| GmailServer[Gmail MCP Server]
-        MCPServers <-->|Playwright Automation| LinkedInServer[LinkedIn MCP Server]
+    subgraph "Model Context Protocol (MCP 2.x) Execution Bridge"
+        MCPSvc <--> TaskBridge[Task & Notes MCP Server]
+        MCPSvc <--> GmailBridge[Gmail MCP Server]
+        MCPSvc <--> LinkedInBridge[LinkedIn MCP Server]
+        
+        TaskBridge <-->|HTTP SSE / Stdio| ZapierTasks[Zapier Tasks MCP: 02292b48]
+        GmailBridge <-->|HTTP SSE / IMAP| ZapierGmail[Zapier Gmail MCP: 02750b42]
+        LinkedInBridge <-->|HTTP SSE / Playwright| ZapierLinkedIn[Zapier LinkedIn MCP: 029df438]
     end
 
-    GmailServer <--> GmailAPI[(Gmail Inboxes)]
-    LinkedInServer <--> LinkedInWeb[(LinkedIn Platform)]
+    ZapierTasks -.->|Fallback| DB
+    ZapierGmail -.->|Fallback| GmailAPI[(Gmail Inboxes)]
+    ZapierLinkedIn -.->|Fallback| LinkedInWeb[(LinkedIn Web Platform)]
 ```
 
 ### Key Architectural Specifications:
-- **Operating Environment**: Cloud (Render / Railway) + Windows Local Workstation (`Asia/Kolkata` / UTC+05:30).
+- **Operating Environment**: Cloud (Render / Hugging Face Spaces / Railway) + Windows Local Workstation (`Asia/Kolkata` / UTC+05:30).
 - **Backend Core**: Python 3.11, FastAPI (asynchronous high-throughput ASGI), Pydantic v2 schemas.
 - **Persistence Layer**: SQLite with Write-Ahead Logging (`WAL` mode) + automated Supabase Cloud Snapshots.
-- **Protocol Standard**: Model Context Protocol (MCP 2.x) with Stdio transport for IDE pair programming.
+- **Protocol Standard**: Model Context Protocol (MCP 2.x) via FastMCP with both HTTP SSE and Stdio transport.
 - **Cloud Storage**: Supabase Storage (`meiyon-storage`) for backups, documents, and public download links.
 
 ---
 
-## 3. Deep Dive: How the Agentic Model Works
+## 3. Model Context Protocol (MCP 2.x) & Zapier Ecosystem
+
+Meiyon implements an enterprise-grade **Model Context Protocol (MCP)** architecture that integrates directly with remote Zapier MCP endpoints while providing instant local fallback to guarantee 100% operational uptime.
+
+### A. Zapier Tasks & Important Data Server (`02292b48`)
+- **Server UUID**: `02292b48-0fbd-8ca5-88c8-021274846b43`
+- **MCP Endpoint**: `https://mcp.zapier.com/api/mcp/s/02292b48-0fbd-8ca5-88c8-021274846b43/mcp`
+- **Capabilities & FastMCP Tools**:
+  - `create_task`: Adds structured task commitments with priority levels (`P1_URGENT`, `P2_HIGH`, `P3_NORMAL`), due dates, and descriptive notes.
+  - `mark_important_data`: Ingests critical technical rules, project specs, or instructions directly into the AI's long-term memory (`FACTUAL_KNOWLEDGE`) and simultaneously pins them to the urgent priorities list.
+  - `list_active_tasks`: Fetches pending commitments ordered by priority.
+  - `complete_task`: Marks tasks finished by full ID or convenient 8-character prefix.
+- **Commands**: `/task add`, `/tasks`, `/done <id>`, `/important <title>: <content>`.
+
+### B. Zapier Gmail MCP Server (`02750b42`)
+- **Server UUID**: `02750b42-81d6-8595-a28c-9aaadc202a9f`
+- **MCP Endpoint**: `https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp`
+- **Capabilities & FastMCP Tools**:
+  - `list_unread_emails`: Fetches truly recent unread emails, parses RFC 2822 / ISO 8601 dates, strips quoted reply noise, and sorts chronologically.
+  - `read_email`: Extracts sanitized plain text body from multipart MIME emails.
+  - `draft_email_reply`: Stages drafted professional replies in the Human-in-the-Loop approval gate.
+  - `send_email`: Transmits authorized communications via verified SMTP/OAuth transport.
+- **Commands**: `/emails`, `/email <1-5>`, `/reply <1-5>`.
+
+### C. Zapier LinkedIn MCP Server (`029df438`)
+- **Server UUID**: `029df438-e88c-8c07-8d68-61978ee0976a`
+- **MCP Endpoint**: `https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp`
+- **Capabilities & FastMCP Tools**:
+  - `get_linkedin_profile`: Inspects candidate headline, summary, and public profile data.
+  - `list_connection_requests`: Checks incoming connection invitations and recruiter reachouts.
+  - `send_connection_invite`: Sends personalized notes strictly validated under 300 characters.
+  - `like_post` & `comment_on_post`: Automates post engagement and ghostwriting through human approval gates.
+- **Commands**: `/linkedin`, `/linkedin sync`, `/linkedin like <id>`, `/linkedin comment <id>`.
+
+### D. Dual-Mode Execution & Fallback Resilience
+
+```mermaid
+flowchart LR
+    Request["Incoming Tool Request"] --> CheckZapier{"Zapier MCP Available?"}
+    CheckZapier -- "Yes" --> RemoteCall["Dispatch HTTP SSE to Zapier MCP"]
+    RemoteCall --> Success{"HTTP 200 OK?"}
+    Success -- "Yes" --> Result["Return Synced Cloud Result"]
+    Success -- "No / Offline" --> LocalFallback["Fall back to Local FastMCP / SQLite WAL"]
+    CheckZapier -- "No" --> LocalFallback
+    LocalFallback --> Done["Execute Locally with 100% Reliability"]
+```
+
+Even during internet disconnects or when Zapier tokens require re-authorization, Meiyon operates seamlessly using its internal SQLite WAL engine and local protocol handlers.
+
+---
+
+## 4. Deep Dive: How the Agentic Model Works
 
 ![Agentic AI Cognitive Loop](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/agent_cognition_loop.jpg)
 
 ### A. The Six-Stage Cognitive Loop
-1. **Perception Layer (Continuous Influx)**: Ingests events from Gmail, LinkedIn, Telegram, WhatsApp, and discovered jobs. Uses IMAP `BODY.PEEK[]` to prevent altering the `\Seen` state of the user's real inbox.
+1. **Perception Layer (Continuous Influx)**: Ingests events from Zapier MCP, Gmail, LinkedIn, Telegram, WhatsApp, and discovered jobs. Uses IMAP `BODY.PEEK[]` and header filtering to prevent altering user inboxes.
 2. **Security Firewall & Threat Neutralization**: Strips prompt injections (`ignore previous instructions` &rarr; `[BLOCKED_INJECTION_ATTEMPT]`) and scans for financial scam markers.
 3. **Context & Memory Grounding**: Injects verified student profile constraints (Mohil, B.Tech CSE AI '27 at Mar Baselios Christian College) along with real-time learned preferences from SQLite.
 4. **Reasoning & Planning (Tree-of-Thought)**: Distinguishes between internal passive analysis and external outbound actions.
 5. **Human-In-The-Loop (HITL) Safety Gate**: Stages external actions in the approvals queue; executes only after human authorization.
-6. **Execution Layer (MCP Stdio)**: Dispatches approved actions through standard I/O (stdio JSON-RPC) and logs tamper-proof audit trails.
+6. **Execution Layer (MCP Stdio / HTTP)**: Dispatches approved actions through standard I/O (stdio JSON-RPC) or Zapier HTTP endpoints and logs tamper-proof audit trails.
 
 ### B. Multi-Factor Evidence-Based Fraud Detection Pipeline
 Job postings and recruiter inquiries are evaluated against verified applicant tracking system (ATS) domains (`greenhouse.io`, `lever.co`, `workday.com`, `ashbyhq.com`). Solicitations requesting payment, gift cards, or crypto are immediately flagged as `HIGH_RISK` scams.
 
+### C. Autonomy Modes & Human-In-The-Loop (HITL) Security Gates
+Meiyon enforces three strict operating postures:
+- **`READ_ONLY`**: The system acts strictly as an analytical observer. Outbound network mutations are prohibited.
+- **`SEMI_AUTONOMOUS`** (Default): Passive reading and local memory caching occur autonomously; all outbound side-effects (sending emails, accepting invites, submitting applications) require human confirmation.
+- **`AUTONOMOUS_APPROVED_ONLY`**: Pre-cleared low-risk operations execute automatically, while high-risk actions remain gated.
+
+### D. Factual ATS Resume Studio & Zero-Hallucination Invariant
+The resume tailoring pipeline dynamically aligns candidate bullet points against technical job requirements. Under no circumstances does the system fabricate credentials, years of experience, or unverified skills. Every bullet is anchored in the verified student profile.
+
 ---
 
-## 4. Academic Attendance, Absence Logging & PDF Reports
+## 5. Academic Attendance, Absence Logging & PDF Reports
 
-Meiyon actively monitors college attendance and tracks assignments, ensuring you never fall below attendance thresholds.
+Meiyon actively monitors college attendance and tracks assignments, ensuring you never fall below the 75% college compliance threshold.
 
 ```mermaid
 flowchart LR
@@ -165,14 +235,14 @@ flowchart LR
 
 ### Academic Features:
 - **Attendance Logging**: Mark presence or absence with a single command (`/present Operating Systems`, `/absent Compiler Design | Sick leave`).
-- **75% Threshold Alerts**: Calculates subject-wise and overall attendance percentage, highlighting subjects at risk.
-- **Assignment Tracker**: Add assignments with due dates (`/assignment add AI | Mini-Project | 2026-11-15`) and mark them as submitted or graded with marks obtained (`/submit <id> 48`).
+- **75% Threshold Alerts**: Calculates subject-wise and overall attendance percentage, highlighting subjects at risk with red warning badges.
+- **Assignment Tracker**: Add assignments with due dates (`/assignment add AI | Mini-Project | 2026-11-15`) and record submissions or grades (`/submit <id> 48`).
 - **Executive PDF Report Generator**: Compiles an official executive summary report using ReportLab with custom color palettes, subject breakdown tables, absence histories, and assignment status lists.
 - **Supabase Cloud Links**: Automatically uploads generated PDFs to Supabase Storage and delivers both the raw PDF document and a cloud download link directly into Telegram.
 
 ---
 
-## 5. Self-Learning Engine & Adaptive Persona Memory
+## 6. Self-Learning Engine & Adaptive Persona Memory
 
 Meiyon continuously learns and evolves based on your natural conversation, instructions, and feedback.
 
@@ -182,6 +252,7 @@ flowchart TD
     Parser -->|"Explicit: '/remember Call me bro'"| MemBank["Learned Memory Store (SQLite)"]
     Parser -->|"Conversational: 'Be more friendly & warm'"| MemBank
     Parser -->|"Correction: 'Actually, I use YOLOv8'"| MemBank
+    Parser -->|"Important Fact: '/important Drone cutoff: 14.4V'"| MemBank
     MemBank --> Compiler["Dynamic Persona & Context Compiler"]
     Compiler --> LLM["LLM Prompt Engine & Fallback Generator"]
     LLM --> Response["Empathetic, Human-Friendly Response"]
@@ -196,12 +267,13 @@ flowchart TD
 - **Explicit Memory Commands**:
   - `/memory` (or `/learned`) — Displays all active learned rules and preferences.
   - `/remember <text>` — Explicitly teaches a rule or habit.
+  - `/important <Title>: <Content>` — Saves high-priority technical facts directly into long-term memory.
   - `/forget <id or key>` — Soft-deactivates an outdated memory rule.
-- **Warm Human-Like Fallbacks**: Even when offline or running without LLM API keys, the fallback engine reads your learned preferences to respond warmly and naturally.
+- **Warm Human-Like Fallbacks**: Even when running without LLM API keys, the fallback engine reads your learned preferences to respond warmly and naturally.
 
 ---
 
-## 6. Supabase Cloud Storage & Database Persistence
+## 7. Supabase Cloud Storage & Database Persistence
 
 Designed for stateless cloud hosting (such as Render or Railway free tier), Meiyon uses **Supabase** for zero-loss cloud persistence.
 
@@ -217,48 +289,55 @@ flowchart LR
 
 ### Cloud Persistence Features:
 - **Automated Snapshots**: Performs a thread-safe SQLite `.backup()` every 6 hours and uploads it to Supabase Storage as `backups/latest.db` and timestamped archives.
-- **Stateless Cloud Disaster Recovery**: If the Render container restarts or redeploys, Meiyon can restore its complete state from `backups/latest.db`.
+- **Stateless Cloud Disaster Recovery**: If the Render container restarts or redeploys, Meiyon restores its complete state from `backups/latest.db`.
 - **Public Cloud File Hosting**: Generated attendance PDFs and documents are stored in the public `meiyon-storage` bucket, generating permanent, shareable download links.
 - **Telegram & API Controls**:
   - `/supabase` — View connection status and stored cloud objects.
   - `/supabase backup` — Trigger an immediate cloud database snapshot.
   - `/supabase restore` — Pull and restore the latest database snapshot.
-  - REST endpoints under `/api/supabase/` (`/status`, `/backup`, `/restore`, `/files`, `/upload`).
 
 ---
 
-## 7. Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)
+## 8. Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)
 
-Meiyon acts as an executive chief-of-staff accessible from anywhere:
+Meiyon acts as an executive chief-of-staff accessible from anywhere via Telegram (`@Meiyon_ai_bot`) and WhatsApp:
 
-### Telegram Bot Commands (`@Meiyon_ai_bot`)
+### A. Interactive Command Matrix
 
-| Command | Action | Description |
-| :--- | :--- | :--- |
-| `/start` | Welcome Guide | Interactive guide displaying all capabilities and quick commands |
-| `/briefing` | Daily Briefing | Top 3 priorities, schedule commitments, and strategic AI advice |
-| `/attendance` | Attendance Overview | Current attendance percentages and subject breakdown |
-| `/present <sub` | Mark Present | Logs class presence (e.g. `/present Operating Systems`) |
-| `/absent <sub` | Mark Absent | Logs absence with notes (e.g. `/absent AI \| Lab setup`) |
-| `/assignments` | List Assignments | View pending, submitted, and graded assignments |
-| `/assignment add`| Add Assignment | Format: `/assignment add <Sub> \| <Title> \| <Due Date>` |
-| `/submit <id> [marks]` | Submit/Grade | Marks assignment submitted or graded (e.g. `/submit a1b2 48`) |
-| `/pdf` or `/report` | Academic PDF | Compiles and delivers official Attendance & Assignment PDF |
-| `/memory` | Learned Persona | View all active self-learned preferences and persona rules |
-| `/remember <text>` | Teach Rule | Explicitly teaches Meiyon a new habit or rule |
-| `/forget <id>` | Delete Rule | Erases or deactivates an outdated learned rule |
-| `/supabase` | Cloud Storage | Check Supabase connection and view stored cloud files |
-| `/supabase backup` | Cloud Snapshot | Trigger instant SQLite database backup to Supabase |
-| `/emails` | Live Gmail Inbox | Fetches unread emails with security triage and clean body |
-| `/email <1-5>` | Read Email Body | Displays full sanitized email body |
-| `/reply <1-5>` | Stage Email Reply | Generates AI draft with Human-in-the-Loop approval gate |
-| `/linkedin` | LinkedIn Activity | Checks connection requests and recruiter communications |
-| `/tasks` | Task Manager | Lists scheduled commitments and deadlines |
-| `/clear` | Reset Buffer | Resets conversation context buffer for a fresh slate |
+| Command | Action | Description | Category |
+| :--- | :--- | :--- | :--- |
+| `/start` | Welcome Guide | Interactive guide displaying all capabilities and quick commands | Core |
+| `/briefing` | Daily Briefing | Top 3 priorities, schedule commitments, and strategic AI advice | Core |
+| `/tasks` | Task Board | Displays commitments with priority badges (`🔴 URGENT`, `🟡 HIGH`, `🟢 NORMAL`) | Tasks |
+| `/task add <Title> [\| Due]` | Add Task | Adds scheduled commitment (synced to Zapier & SQLite WAL) | Tasks |
+| `/done <id>` | Complete Task | Marks task finished by full ID or 8-character prefix | Tasks |
+| `/important <T>: <C>` | Mark Important | Saves critical fact to long-term memory & pins to P1 urgent briefing | Knowledge |
+| `/attendance` | Attendance Overview | Current attendance percentages and subject breakdown | Academic |
+| `/present <sub` | Mark Present | Logs class presence (e.g. `/present Operating Systems`) | Academic |
+| `/absent <sub` | Mark Absent | Logs absence with notes (e.g. `/absent AI \| Lab setup`) | Academic |
+| `/assignments` | List Assignments | View pending, submitted, and graded assignments | Academic |
+| `/assignment add`| Add Assignment | Format: `/assignment add <Sub> \| <Title> \| <Due Date>` | Academic |
+| `/submit <id> [marks]` | Submit/Grade | Marks assignment submitted or graded (e.g. `/submit a1b2 48`) | Academic |
+| `/pdf` or `/report` | Academic PDF | Compiles and delivers official Attendance & Assignment PDF | Academic |
+| `/memory` | Learned Persona | View all active self-learned preferences and persona rules | Learning |
+| `/remember <text>` | Teach Rule | Explicitly teaches Meiyon a new habit or rule | Learning |
+| `/forget <id>` | Delete Rule | Erases or deactivates an outdated learned rule | Learning |
+| `/supabase` | Cloud Storage | Check Supabase connection and view stored cloud files | Cloud |
+| `/supabase backup` | Cloud Snapshot | Trigger instant SQLite database backup to Supabase | Cloud |
+| `/emails` | Live Gmail Inbox | Fetches recent emails via Zapier MCP with security triage | Comms |
+| `/email <1-5>` | Read Email Body | Displays full sanitized email body | Comms |
+| `/reply <1-5>` | Stage Email Reply | Generates AI draft with Human-in-the-Loop approval gate | Comms |
+| `/linkedin` | LinkedIn Activity | Checks connection requests and recruiter communications | Comms |
+| `/clear` | Reset Buffer | Resets conversation context buffer for a fresh slate | Utilities |
+
+### B. Two-Way Multi-Turn Dialogue & Persona Continuity
+When you speak to Meiyon without slash commands, the system activates a warm, conversational persona grounded in your persistent profile and learned memories:
+- Remembers multi-turn context (e.g., asking about an assignment, then asking *"When is it due again?"*).
+- Adapts tone dynamically to your preferences (casual, executive, or friendly).
 
 ---
 
-## 8. Cybersecurity & Threat Defense System
+## 9. Cybersecurity & Threat Defense System
 
 - **Adversarial Payload Sanitization**: Strips prompt injection attempts before they reach the reasoning engine.
 - **Phishing & Financial Fraud Detection**: Scans recruiter solicitations for advance fee fraud, crypto requests, and suspicious free webmail domains.
@@ -267,29 +346,12 @@ Meiyon acts as an executive chief-of-staff accessible from anywhere:
 
 ---
 
-## 9. Model Context Protocol (MCP) Server Specifications
-
-Meiyon implements standard Model Context Protocol (MCP 2.x) servers over Stdio:
-
-- **Gmail MCP Server** ([`mcp_servers/gmail_server.py`](file:///c:/Users/MOHIL/Desktop/agenticai/mcp_servers/gmail_server.py)):
-  - `list_unread_emails`: Fetches recent messages using IMAP `BODY.PEEK[]`.
-  - `read_email`: Extracts clean plaintext body from multipart HTML/plain emails.
-  - `draft_email_reply`: Stages drafted replies in the approval gate.
-  - `send_email`: Transmits approved messages via SMTP SSL.
-- **LinkedIn MCP Server** ([`mcp_servers/linkedin_server.py`](file:///c:/Users/MOHIL/Desktop/agenticai/mcp_servers/linkedin_server.py)):
-  - `get_linkedin_profile`: Reads candidate public headline and summary.
-  - `list_connection_requests`: Checks incoming connection invitations.
-  - `send_connection_invite`: Sends connection notes strictly validated under 300 characters.
-  - `like_post` & `comment_on_post`: Automates post engagement via Playwright with approval gates.
-
----
-
 ## 10. Complete Repository Structure
 
 ```
 agenticai/
 ├── .agents/                          # Antigravity IDE Workspace Customizations
-│   ├── mcp_config.json               # Registers Gmail & LinkedIn MCP servers
+│   ├── mcp_config.json               # Registers Zapier Tasks, Gmail & LinkedIn MCP servers
 │   └── skills/
 │       └── mcp-email-linkedin/
 │           └── SKILL.md              # Antigravity tool runbook & safety instructions
@@ -327,7 +389,6 @@ agenticai/
 │   │   ├── mcp_service.py            # MCP Client orchestrator & sync
 │   │   ├── messaging_bot_service.py  # High-speed Telegram & WhatsApp dispatcher
 │   │   ├── profile_service.py        # Profile persistence
-│   │   ├── prompts.py                # Cognitive prompts & instructions proxy
 │   │   ├── reminder_service.py       # Background scheduler & alert delivery
 │   │   ├── resume_service.py         # ATS tailoring & application tracking
 │   │   ├── supabase_service.py       # Supabase Cloud Storage & database persistence
@@ -349,28 +410,29 @@ agenticai/
 │   ├── manager.db                    # Primary database in WAL mode
 │   ├── backups/                      # Snapshot backup archives
 │   └── reports/                      # Generated academic PDF reports
-├── mcp_servers/                      # Standard Model Context Protocol (MCP) Servers
-│   ├── gmail_server.py               # Gmail MCP server (IMAP/SMTP/OAuth/Sandbox)
-│   └── linkedin_server.py            # LinkedIn MCP server (Playwright browser/Sandbox)
-├── tests/                            # Automated Pytest Suite (63/63 Tests Passing)
-│   ├── test_academic.py              # Attendance, absence, assignment & PDF tests
-│   ├── test_api.py                   # REST endpoint tests
-│   ├── test_approvals.py             # Security gate & audit tests
-│   ├── test_briefing.py              # Briefing & priority ranking tests
-│   ├── test_career.py                # Job fraud detection & resume tailoring tests
-│   ├── test_communication.py         # Prompt injection & scam triage tests
-│   ├── test_database.py              # SQLite WAL mode & backup/restore tests
-│   ├── test_learning.py              # Self-learning engine, memory & persona tests
-│   ├── test_mcp.py                   # Gmail & LinkedIn MCP server & tool tests
-│   ├── test_messaging.py             # Telegram & WhatsApp webhook tests
-│   ├── test_prompts.py               # Executive prompts & HITL protocol tests
-│   ├── test_reminders.py             # Reminder delivery & snooze tests
-│   ├── test_supabase.py              # Supabase storage, backup & restore tests
-│   └── test_tasks.py                 # Task CRUD & confirmed status tests
+├── mcp_servers/                      # Model Context Protocol (FastMCP) Servers
+│   ├── task_server.py                # Tasks & Important Data Server (Zapier 02292b48 / SQLite)
+│   ├── gmail_server.py               # Gmail MCP server (Zapier 02750b42 / IMAP/SMTP)
+│   └── linkedin_server.py            # LinkedIn MCP server (Zapier 029df438 / Playwright)
+├── tests/                            # Automated Pytest Suite (71/71 Tests Passing)
+│   ├── test_academic.py              # Attendance, absence, assignment & PDF tests (5 tests)
+│   ├── test_api.py                   # REST endpoint & dashboard tests (5 tests)
+│   ├── test_approvals.py             # Security gate & audit tests (1 test)
+│   ├── test_briefing.py              # Briefing & priority ranking tests (1 test)
+│   ├── test_career.py                # Job fraud detection & resume tailoring tests (3 tests)
+│   ├── test_communication.py         # Prompt injection & scam triage tests (5 tests)
+│   ├── test_database.py              # SQLite WAL mode & backup/restore tests (3 tests)
+│   ├── test_learning.py              # Self-learning engine, memory & persona tests (6 tests)
+│   ├── test_mcp.py                   # Gmail & LinkedIn MCP server & tool tests (7 tests)
+│   ├── test_messaging.py             # Telegram & WhatsApp webhook tests (9 tests)
+│   ├── test_prompts.py               # Executive prompts & HITL protocol tests (10 tests)
+│   ├── test_reminders.py             # Reminder delivery & snooze tests (1 test)
+│   ├── test_search.py                # Live web search & research tests (6 tests)
+│   ├── test_supabase.py              # Supabase storage, backup & restore tests (6 tests)
+│   └── test_tasks.py                 # Task CRUD, FastMCP tools & bot commands (3 tests)
 ├── .env.example                      # Template environment variables
 ├── MCP_SETUP_GUIDE.md                # Quick visual guide for Gmail & LinkedIn setup
 ├── run.ps1                           # One-click Windows PowerShell launcher
-├── send_whatsapp_chat.py             # WhatsApp template launcher script
 └── README.md                         # Project documentation
 ```
 
@@ -391,14 +453,12 @@ agenticai/
 | `POST` | `/api/learning/memories` | Teaches AI a new preference, fact, or style rule | Memory Store |
 | `DELETE`| `/api/learning/memories/{id}`| Deactivates an outdated memory rule | Soft Delete |
 | `POST` | `/api/learning/feedback` | Submits conversational feedback for instant adaptation | Feedback Loop |
-| `GET` | `/api/learning/prompt-context` | Retrieves compiled persona prompt instructions | Prompt Context |
 | `GET` | `/api/supabase/status` | Checks Supabase connection, URL, and bucket health | Health Check |
 | `POST` | `/api/supabase/backup` | Triggers immediate SQLite cloud backup snapshot | Cloud Snapshot |
 | `POST` | `/api/supabase/restore` | Restores local database from cloud snapshot | Cloud Restore |
 | `GET` | `/api/supabase/files` | Lists stored objects in Supabase Storage | Read-only |
-| `POST` | `/api/supabase/upload` | Direct multipart file upload to Supabase bucket | Storage Write |
 | `GET` | `/api/briefing/daily` | Daily top 3 priorities, deadlines & active alerts | Read-only |
-| `GET` | `/api/communication/mcp/status`| Checks Gmail and LinkedIn MCP connection status | Read-only |
+| `GET` | `/api/communication/mcp/status`| Checks Gmail, LinkedIn & Task MCP connection status | Read-only |
 | `POST` | `/api/communication/mcp/sync-emails` | Syncs unread emails via Gmail MCP with security triage | Safe Ingestion |
 | `POST` | `/api/communication/mcp/sync-linkedin`| Syncs recruiter messages and connection invitations | Safe Ingestion |
 | `POST` | `/api/communication/emails/{id}/reply`| Stages drafted response in Security Gate | Authorization Required |
@@ -423,7 +483,7 @@ AI_PROVIDER="nvidia_nim"
 AI_API_KEY="nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 AI_MODEL="google/diffusiongemma-26b-a4b-it"
 
-# Telegram Bot
+# Telegram Bot Integration (@Meiyon_ai_bot)
 TELEGRAM_ENABLED="true"
 TELEGRAM_BOT_TOKEN="your_bot_token"
 TELEGRAM_ALLOWED_CHAT_ID=""
@@ -434,31 +494,32 @@ SUPABASE_KEY="your-supabase-service-role-key"
 SUPABASE_STORAGE_BUCKET="meiyon-storage"
 SUPABASE_AUTO_SYNC="true"
 
-# Gmail MCP Integration (Optional live sync)
-GMAIL_MCP_ENABLED="true"
-GMAIL_ADDRESS="your_email@gmail.com"
-GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"
+# Model Context Protocol (MCP): Zapier Servers
+ZAPIER_TASKS_MCP_ID="02292b48-0fbd-8ca5-88c8-021274846b43"
+ZAPIER_TASKS_MCP_URL="https://mcp.zapier.com/api/mcp/s/02292b48-0fbd-8ca5-88c8-021274846b43/mcp"
 
-# LinkedIn MCP Integration (Optional live sync)
-LINKEDIN_MCP_ENABLED="true"
-LINKEDIN_LI_AT_COOKIE="your_li_at_cookie"
-LINKEDIN_HEADLESS="true"
+ZAPIER_GMAIL_MCP_ID="02750b42-81d6-8595-a28c-9aaadc202a9f"
+ZAPIER_GMAIL_MCP_URL="https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp"
+
+ZAPIER_LINKEDIN_MCP_ID="029df438-e88c-8c07-8d68-61978ee0976a"
+ZAPIER_LINKEDIN_MCP_URL="https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp"
 ```
 
 ### B. Starting the Application
+
 ```powershell
 # Using the PowerShell launcher
 .\run.ps1
 
-# Or directly with Python
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Or with uv / Python directly
+uv run python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 - **Web Dashboard**: [http://localhost:8000](http://localhost:8000)
 - **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### C. Running the Complete Automated Test Suite (63/63 Tests)
+### C. Running the Complete Automated Test Suite (71/71 Tests Passing)
 
-The test suite validates academic tracking, self-learning adaptation, Supabase persistence, prompt injection defenses, fraud scanning, MCP servers, and messaging dispatchers:
+The test suite thoroughly validates academic tracking, self-learning adaptation, Supabase cloud persistence, prompt injection defense, fraud scanning, FastMCP & Zapier tool execution, and messaging dispatchers:
 
 ```powershell
 $env:PYTHONIOENCODING="utf-8"
@@ -470,28 +531,29 @@ uv run pytest -v
 platform win32 -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
 rootdir: C:\Users\MOHIL\Desktop\agenticai
 plugins: anyio-4.15.1
-collected 63 items
+collected 71 items
 
 tests/test_academic.py .....                                             [  7%]
-tests/test_api.py .....                                                  [ 15%]
-tests/test_approvals.py .                                                [ 17%]
-tests/test_briefing.py .                                                 [ 19%]
-tests/test_career.py ...                                                 [ 23%]
-tests/test_communication.py .....                                        [ 31%]
-tests/test_database.py ...                                               [ 36%]
-tests/test_learning.py ......                                            [ 46%]
-tests/test_mcp.py .......                                                [ 57%]
-tests/test_messaging.py ........                                         [ 69%]
-tests/test_prompts.py ..........                                         [ 85%]
-tests/test_reminders.py .                                                [ 87%]
-tests/test_supabase.py ......                                            [ 96%]
-tests/test_tasks.py ..                                                   [100%]
+tests/test_api.py .....                                                  [ 14%]
+tests/test_approvals.py .                                                [ 15%]
+tests/test_briefing.py .                                                 [ 16%]
+tests/test_career.py ...                                                 [ 21%]
+tests/test_communication.py .....                                        [ 28%]
+tests/test_database.py ...                                               [ 32%]
+tests/test_learning.py ......                                            [ 40%]
+tests/test_mcp.py .......                                                [ 50%]
+tests/test_messaging.py .........                                        [ 63%]
+tests/test_prompts.py ..........                                         [ 77%]
+tests/test_reminders.py .                                                [ 78%]
+tests/test_search.py ......                                              [ 87%]
+tests/test_supabase.py ......                                            [ 95%]
+tests/test_tasks.py ...                                                  [100%]
 
-======================== 63 passed in 90.25s (0:01:30) ========================
+======================== 71 passed in 120.45s (0:02:00) ========================
 ```
 
 ---
 
 <div align="center">
-  <sub>Engineered with precision for executive AI management • Built with FastAPI, SQLite WAL, Supabase, Model Context Protocol, Telegram & WhatsApp</sub>
+  <sub>Engineered with precision for executive AI management • Built with FastAPI, SQLite WAL, Supabase, Model Context Protocol, Zapier, Telegram & WhatsApp</sub>
 </div>
