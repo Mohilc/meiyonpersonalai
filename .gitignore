@@ -7,4 +7,8 @@ data/*.db-shm
 data/*.db-wal
 data/backups/
 data/reports/
+# Environment files & secrets
 .env
+.env.*
+*.env
+!.env.example

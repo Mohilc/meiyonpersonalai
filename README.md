@@ -48,9 +48,9 @@ The Personal AI Manager features a high-performance Dark Glassmorphism interface
 1. [Executive Summary & Core Mission](#1-executive-summary--core-mission)
 2. [End-to-End System Architecture](#2-end-to-end-system-architecture)
 3. [Model Context Protocol (MCP 2.x) & Zapier Ecosystem](#3-model-context-protocol-mcp-2x--zapier-ecosystem)
-   - [A. Zapier Tasks & Important Data Server (`02292b48`)](#a-zapier-tasks--important-data-server-02292b48)
-   - [B. Zapier Gmail MCP Server (`02750b42`)](#b-zapier-gmail-mcp-server-02750b42)
-   - [C. Zapier LinkedIn MCP Server (`029df438`)](#c-zapier-linkedin-mcp-server-029df438)
+   - [A. Zapier Tasks & Important Data Server](#a-zapier-tasks--important-data-server)
+   - [B. Zapier Gmail MCP Server](#b-zapier-gmail-mcp-server)
+   - [C. Zapier LinkedIn MCP Server](#c-zapier-linkedin-mcp-server)
    - [D. Dual-Mode Execution & Fallback Resilience](#d-dual-mode-execution--fallback-resilience)
 4. [Deep Dive: How the Agentic Model Works](#4-deep-dive-how-the-agentic-model-works)
    - [A. The Six-Stage Cognitive Loop](#a-the-six-stage-cognitive-loop)
@@ -78,7 +78,7 @@ Early-career engineers and computer science students face severe friction in bal
 
 The **Executive Personal AI Manager** provides a hardened, local-first autonomous agent platform that solves these challenges through:
 1. **Ultra-Low Latency Multi-Model Pool**: Powered by NVIDIA NIM with `google/diffusiongemma-26b-a4b-it` delivering sub-second (~0.6s - 1.3s) conversational copilot responses, backed by `nvidia/nemotron-3-super-120b-a12b` for deep strategic reasoning and high-throughput fallback.
-2. **Model Context Protocol (MCP 2.x) with Zapier Cloud Bridge**: Full dual-mode integration with Zapier MCP servers for **Tasks & Important Notes** (`02292b48-0fbd-8ca5-88c8-021274846b43`), **Gmail Inboxes** (`02750b42-81d6-8595-a28c-9aaadc202a9f`), and **LinkedIn Platform** (`029df438-e88c-8c07-8d68-61978ee0976a`).
+2. **Model Context Protocol (MCP 2.x) with Zapier Cloud Bridge**: Full dual-mode integration with Zapier MCP servers for **Tasks & Important Notes**, **Gmail Inboxes**, and **LinkedIn Platform**.
 3. **Academic Attendance & Absence Tracker**: Real-time logging of classes (`/present <subject>`, `/absent <subject>`), assignment submission tracking, and automated 75% college compliance alerts with instant ReportLab PDF report generation delivered to Telegram and cloud.
 4. **Self-Learning & Adaptive Persona Engine**: Dynamic SQLite memory bank (`learned_memories`) that learns user preferences and tone requests in real-time ("Be more friendly", "Call me bro", "Don't use corporate speak"), dynamically shaping both LLM generation and fallback responses.
 5. **Supabase Cloud Persistence & Document Storage**: Automated database backups every 6 hours (`backups/latest.db` and timestamped snapshots) to Supabase Storage, preserving state across stateless Render deployments, plus permanent public cloud links for generated PDFs.
@@ -120,9 +120,9 @@ graph TD
         MCPSvc <--> GmailBridge[Gmail MCP Server]
         MCPSvc <--> LinkedInBridge[LinkedIn MCP Server]
         
-        TaskBridge <-->|HTTP SSE / Stdio| ZapierTasks[Zapier Tasks MCP: 02292b48]
-        GmailBridge <-->|HTTP SSE / IMAP| ZapierGmail[Zapier Gmail MCP: 02750b42]
-        LinkedInBridge <-->|HTTP SSE / Playwright| ZapierLinkedIn[Zapier LinkedIn MCP: 029df438]
+        TaskBridge <-->|HTTP SSE / Stdio| ZapierTasks[Zapier Tasks MCP Server]
+        GmailBridge <-->|HTTP SSE / IMAP| ZapierGmail[Zapier Gmail MCP Server]
+        LinkedInBridge <-->|HTTP SSE / Playwright| ZapierLinkedIn[Zapier LinkedIn MCP Server]
     end
 
     ZapierTasks -.->|Fallback| DB
@@ -143,9 +143,8 @@ graph TD
 
 Meiyon implements an enterprise-grade **Model Context Protocol (MCP)** architecture that integrates directly with remote Zapier MCP endpoints while providing instant local fallback to guarantee 100% operational uptime.
 
-### A. Zapier Tasks & Important Data Server (`02292b48`)
-- **Server UUID**: `02292b48-0fbd-8ca5-88c8-021274846b43`
-- **MCP Endpoint**: `https://mcp.zapier.com/api/mcp/s/02292b48-0fbd-8ca5-88c8-021274846b43/mcp`
+### A. Zapier Tasks & Important Data Server
+- **Architecture**: Remote Zapier Tasks MCP server with automatic local SQLite WAL fallback.
 - **Capabilities & FastMCP Tools**:
   - `create_task`: Adds structured task commitments with priority levels (`P1_URGENT`, `P2_HIGH`, `P3_NORMAL`), due dates, and descriptive notes.
   - `mark_important_data`: Ingests critical technical rules, project specs, or instructions directly into the AI's long-term memory (`FACTUAL_KNOWLEDGE`) and simultaneously pins them to the urgent priorities list.
@@ -153,9 +152,8 @@ Meiyon implements an enterprise-grade **Model Context Protocol (MCP)** architect
   - `complete_task`: Marks tasks finished by full ID or convenient 8-character prefix.
 - **Commands**: `/task add`, `/tasks`, `/done <id>`, `/important <title>: <content>`.
 
-### B. Zapier Gmail MCP Server (`02750b42`)
-- **Server UUID**: `02750b42-81d6-8595-a28c-9aaadc202a9f`
-- **MCP Endpoint**: `https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp`
+### B. Zapier Gmail MCP Server
+- **Architecture**: OAuth-authenticated remote Zapier Gmail MCP server with IMAP/SMTP local fallback.
 - **Capabilities & FastMCP Tools**:
   - `list_unread_emails`: Fetches truly recent unread emails, parses RFC 2822 / ISO 8601 dates, strips quoted reply noise, and sorts chronologically.
   - `read_email`: Extracts sanitized plain text body from multipart MIME emails.
@@ -163,9 +161,8 @@ Meiyon implements an enterprise-grade **Model Context Protocol (MCP)** architect
   - `send_email`: Transmits authorized communications via verified SMTP/OAuth transport.
 - **Commands**: `/emails`, `/email <1-5>`, `/reply <1-5>`.
 
-### C. Zapier LinkedIn MCP Server (`029df438`)
-- **Server UUID**: `029df438-e88c-8c07-8d68-61978ee0976a`
-- **MCP Endpoint**: `https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp`
+### C. Zapier LinkedIn MCP Server
+- **Architecture**: Remote Zapier LinkedIn MCP server with Playwright browser fallback.
 - **Capabilities & FastMCP Tools**:
   - `get_linkedin_profile`: Inspects candidate headline, summary, and public profile data.
   - `list_connection_requests`: Checks incoming connection invitations and recruiter reachouts.
@@ -419,9 +416,9 @@ agenticai/
 │   ├── backups/                      # Snapshot backup archives
 │   └── reports/                      # Generated academic PDF reports
 ├── mcp_servers/                      # Model Context Protocol (FastMCP) Servers
-│   ├── task_server.py                # Tasks & Important Data Server (Zapier 02292b48 / SQLite)
-│   ├── gmail_server.py               # Gmail MCP server (Zapier 02750b42 / IMAP/SMTP)
-│   └── linkedin_server.py            # LinkedIn MCP server (Zapier 029df438 / Playwright)
+│   ├── task_server.py                # Tasks & Important Data Server (Zapier MCP / SQLite)
+│   ├── gmail_server.py               # Gmail MCP server (Zapier MCP / IMAP/SMTP)
+│   └── linkedin_server.py            # LinkedIn MCP server (Zapier MCP / Playwright)
 ├── tests/                            # Automated Pytest Suite (72/72 Tests Passing)
 │   ├── test_academic.py              # Attendance, absence, assignment & PDF tests (5 tests)
 │   ├── test_api.py                   # REST endpoint, security & backdoor tests (6 tests)
@@ -481,37 +478,12 @@ agenticai/
 
 ## 12. Setup, Quick Start & Operations
 
-### A. Environment Configuration (`.env`)
+### A. Environment Configuration & Security
 
-Copy `.env.example` to `.env` and fill in your keys:
+Meiyon loads its operational configuration and integration credentials securely from a private environment file or cloud secrets manager (such as Render Environment Secrets or Hugging Face Space Secrets).
 
-```env
-# AI Provider (NVIDIA NIM)
-AI_PROVIDER="nvidia_nim"
-AI_API_KEY="nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-AI_MODEL="google/diffusiongemma-26b-a4b-it"
-
-# Telegram Bot Integration (@Meiyon_ai_bot)
-TELEGRAM_ENABLED="true"
-TELEGRAM_BOT_TOKEN="your_bot_token"
-TELEGRAM_ALLOWED_CHAT_ID=""
-
-# Supabase Cloud Storage & Database Persistence
-SUPABASE_URL="https://your-project.supabase.co"
-SUPABASE_KEY="your-supabase-service-role-key"
-SUPABASE_STORAGE_BUCKET="meiyon-storage"
-SUPABASE_AUTO_SYNC="true"
-
-# Model Context Protocol (MCP): Zapier Servers
-ZAPIER_TASKS_MCP_ID="02292b48-0fbd-8ca5-88c8-021274846b43"
-ZAPIER_TASKS_MCP_URL="https://mcp.zapier.com/api/mcp/s/02292b48-0fbd-8ca5-88c8-021274846b43/mcp"
-
-ZAPIER_GMAIL_MCP_ID="02750b42-81d6-8595-a28c-9aaadc202a9f"
-ZAPIER_GMAIL_MCP_URL="https://mcp.zapier.com/api/mcp/s/02750b42-81d6-8595-a28c-9aaadc202a9f/mcp"
-
-ZAPIER_LINKEDIN_MCP_ID="029df438-e88c-8c07-8d68-61978ee0976a"
-ZAPIER_LINKEDIN_MCP_URL="https://mcp.zapier.com/api/mcp/s/029df438-e88c-8c07-8d68-61978ee0976a/mcp"
-```
+- **Strict Privacy**: Environment files containing actual API keys, tokens, and personal credentials are completely hidden and git-ignored from version control to prevent credential leakage.
+- **Setup**: Copy the configuration template into your local private configuration and specify your desired credentials (AI reasoning keys, Telegram Bot token, Supabase storage, and Model Context Protocol endpoints).
 
 ### B. Starting the Application
 
