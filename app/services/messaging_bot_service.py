@@ -1061,7 +1061,7 @@ def send_telegram_message(chat_id: str, text: str) -> bool:
         "parse_mode": "Markdown"
     }
     try:
-        with httpx.Client(timeout=8.0) as client:
+        with httpx.Client(timeout=25.0) as client:
             resp = client.post(url, json=payload)
             if resp.status_code == 200:
                 return True
@@ -1267,8 +1267,8 @@ async def run_continuous_telegram_poller():
                         text = message.get("text", "")
                         
                         if chat_id and text:
-                            reply_text = handle_incoming_text(sender_id=chat_id, platform="telegram", text=text)
-                            send_telegram_message(chat_id=chat_id, text=reply_text)
+                            reply_text = await asyncio.to_thread(handle_incoming_text, chat_id, "telegram", text)
+                            await asyncio.to_thread(send_telegram_message, chat_id, reply_text)
                 await asyncio.sleep(0.05)
             except asyncio.CancelledError:
                 logger.info("Telegram poller task cancelled.")
@@ -1276,3 +1276,14 @@ async def run_continuous_telegram_poller():
             except Exception as e:
                 logger.debug("Telegram poller tick notice: %s", str(e))
                 await asyncio.sleep(1.0)
+
+
+if __name__ == "__main__":
+    from app.database import init_db
+    init_db()
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    print("🚀 Starting Meiyon Telegram Bot Poller standalone...")
+    try:
+        asyncio.run(run_continuous_telegram_poller())
+    except KeyboardInterrupt:
+        print("\n🛑 Poller stopped by user.")

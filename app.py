@@ -16,6 +16,7 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 import gradio as gr
+import threading
 
 # Hugging Face ZeroGPU compatibility hook
 try:
@@ -27,6 +28,7 @@ try:
         return True
 except Exception:
     pass
+from app.config import settings
 from app.database import init_db
 from app.services import (
     messaging_bot_service,
@@ -42,6 +44,20 @@ from app.models.communication import EmailMessageCreate
 
 # Initialize SQLite database and baseline seed
 init_db()
+
+# Start continuous Telegram poller in background thread if enabled
+def _start_telegram_background_poller():
+    if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
+        def _poller_worker():
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(messaging_bot_service.run_continuous_telegram_poller())
+
+        poller_thread = threading.Thread(target=_poller_worker, name="HFTelegramPoller", daemon=True)
+        poller_thread.start()
+
+_start_telegram_background_poller()
 
 
 def _sanitize_content(content):
@@ -97,7 +113,7 @@ def chat_with_meiyon(user_message, history):
     try:
         reply = messaging_bot_service.handle_incoming_text(
             sender_id="hf_space_guest",
-            platform="telegram",
+            platform="gradio",
             text=clean
         )
     except Exception as e:
