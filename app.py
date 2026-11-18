@@ -50,12 +50,21 @@ def _start_telegram_background_poller():
     if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
         def _poller_worker():
             import asyncio
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(messaging_bot_service.run_continuous_telegram_poller())
+            import time
+            while True:
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(messaging_bot_service.run_continuous_telegram_poller())
+                except Exception as e:
+                    print(f"⚠️ Telegram poller thread caught error: {e}. Restarting in 5s...", flush=True)
+                    time.sleep(5)
 
         poller_thread = threading.Thread(target=_poller_worker, name="HFTelegramPoller", daemon=True)
         poller_thread.start()
+        print("✅ Background Telegram Poller thread started in app.py", flush=True)
+    else:
+        print(f"⚠️ Telegram Poller NOT started in app.py: TELEGRAM_ENABLED={settings.TELEGRAM_ENABLED}, token_set={bool(settings.TELEGRAM_BOT_TOKEN)}", flush=True)
 
 _start_telegram_background_poller()
 

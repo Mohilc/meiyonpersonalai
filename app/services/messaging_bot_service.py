@@ -89,6 +89,22 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
     profile = profile_service.get_profile()
 
     # 2. Executive Commands Routing
+    if cmd in ("/status", "/diag", "/health", "status", "health"):
+        import threading
+        threads = [t.name for t in threading.enumerate()]
+        has_poller = any("telegram" in t.lower() or "poller" in t.lower() for t in threads)
+        tok_set = bool(settings.TELEGRAM_BOT_TOKEN)
+        masked_tok = settings.TELEGRAM_BOT_TOKEN[:6] + "..." + settings.TELEGRAM_BOT_TOKEN[-4:] if tok_set else "NOT SET"
+        return (
+            f"🤖 *Meiyon System Diagnostics:*\n"
+            f"• *Telegram Enabled:* `{settings.TELEGRAM_ENABLED}`\n"
+            f"• *Telegram Token:* `{masked_tok}`\n"
+            f"• *Telegram Allowed Chat ID:* `{settings.TELEGRAM_ALLOWED_CHAT_ID or 'Not Set (Open)'}`\n"
+            f"• *Telegram Poller Thread:* `{'🟢 RUNNING' if has_poller else '🔴 NOT RUNNING'}`\n"
+            f"• *Active Threads:* `{', '.join(threads)}`\n"
+            f"• *Supabase Connected:* `{'🟢 Yes' if bool(settings.SUPABASE_URL and settings.SUPABASE_KEY) else '❌ No'}`"
+        )
+
     if cmd in ("/start", "help", "/help", "menu"):
         return (
             f"👋 *Welcome, {profile.full_name}!* I am *Meiyon*, your Executive Personal AI Manager & Academic Partner.\n\n"
