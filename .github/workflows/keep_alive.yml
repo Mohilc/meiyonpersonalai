@@ -1,0 +1,20 @@
+name: 24/7 Keep-Alive Pinger
+
+on:
+  schedule:
+    # Run every 6 hours to prevent Hugging Face Space & Render from sleeping
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Hugging Face Space
+        run: |
+          echo "Pinging Meiyon Hugging Face Space..."
+          curl -s -o /dev/null -w "%{http_code}\n" https://mohilc-meiyon-ai.hf.space || true
+
+      - name: Ping Render Service
+        run: |
+          echo "Keep-alive pulse dispatched."
