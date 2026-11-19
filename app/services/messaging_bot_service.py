@@ -1085,6 +1085,19 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
     return final_reply
 
 
+def send_telegram_chat_action(chat_id: str, action: str = "typing") -> bool:
+    """Dispatches a chat action (e.g. 'typing') so Telegram shows the user immediate real-time feedback."""
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return False
+    url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendChatAction"
+    try:
+        with httpx.Client(timeout=4.0) as client:
+            resp = client.post(url, json={"chat_id": chat_id, "action": action})
+            return resp.status_code == 200
+    except Exception:
+        return False
+
+
 def send_telegram_message(chat_id: str, text: str) -> bool:
     """Dispatches a message to a user on Telegram with automatic fallback for markdown parse errors."""
     if not settings.TELEGRAM_BOT_TOKEN:
@@ -1263,6 +1276,7 @@ def poll_telegram_updates_once():
                 text = message.get("text", "")
                 
                 if chat_id and text:
+                    send_telegram_chat_action(chat_id, "typing")
                     reply_text = handle_incoming_text(sender_id=chat_id, platform="telegram", text=text)
                     send_telegram_message(chat_id=chat_id, text=reply_text)
     except Exception as e:
@@ -1302,6 +1316,7 @@ async def run_continuous_telegram_poller():
                         text = message.get("text", "")
                         
                         if chat_id and text:
+                            await asyncio.to_thread(send_telegram_chat_action, chat_id, "typing")
                             reply_text = await asyncio.to_thread(handle_incoming_text, chat_id, "telegram", text)
                             await asyncio.to_thread(send_telegram_message, chat_id, reply_text)
                 await asyncio.sleep(0.05)

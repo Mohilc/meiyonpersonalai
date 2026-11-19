@@ -34,6 +34,7 @@ async def telegram_webhook(request: Request):
     text = message.get("text", "")
 
     if chat_id and text:
+        messaging_bot_service.send_telegram_chat_action(chat_id=chat_id, action="typing")
         reply = messaging_bot_service.handle_incoming_text(sender_id=chat_id, platform="telegram", text=text)
         messaging_bot_service.send_telegram_message(chat_id=chat_id, text=reply)
 

@@ -311,7 +311,8 @@ def get_agent_instance():
         logger.warning("No NVIDIA API key configured for LangChain agent.")
         return None
 
-    model_name = settings.NVIDIA_REASONING_MODEL or "mistralai/mistral-large-4-1t-a52b"
+    # Prioritize NVIDIA Nemotron 3.5 Bolt for ultra-low latency (< 1s), falling back if needed
+    model_name = settings.NVIDIA_GENERAL_MODEL or "nvidia/nemotron-3.5-bolt-e4b"
 
     try:
         llm = ChatOpenAI(
@@ -319,7 +320,7 @@ def get_agent_instance():
             api_key=api_key,
             model=model_name,
             temperature=0.3,
-            request_timeout=15.0,
+            request_timeout=12.0,
             max_retries=1
         )
 
