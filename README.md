@@ -350,7 +350,15 @@ flowchart TD
 
 Meiyon's conversational and autonomous reasoning engine underwent rigorous performance tuning, transitioning from high-latency 1-trillion parameter MoE models to a low-latency dual-tier architecture powered by **NVIDIA Nemotron 3.5 Bolt (`nvidia/nemotron-3.5-bolt-e4b`)** combined with real-time Telegram typing status feedback.
 
-![Meiyon Model Performance & Latency Benchmark](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/model_latency_benchmark.png)
+![Meiyon 3D Model Performance & Latency Benchmark](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/model_latency_benchmark.png)
+
+### 3D Latency & Scalability Topology
+The 3D performance landscape above visualizes model execution latency across two continuous operational dimensions:
+- **X-Axis (Autonomous Tool Complexity)**: Single-turn conversational queries (1 step) through complex multi-tool execution chains (5 steps).
+- **Y-Axis (Concurrent Workload Load Tier)**: Scaling token context depth and concurrent mobile inquiry traffic (scale 1 to 10).
+- **Z-Axis (Execution Latency)**: End-to-end response time in seconds.
+- **Top Crimson Surface (`mistral-large-4-1t-a52b`)**: Illustrates the high latency plateaus (28s–36s) and vulnerability to 504 timeouts caused by heavy tool schema overhead on 1T parameter models.
+- **Bottom Emerald Surface (`nvidia/nemotron-3.5-bolt-e4b`)**: Shows the optimized, ultra-flat execution baseline (0.69s–4.10s) delivering up to **51.3x faster** responses across all load tiers.
 
 ### Quantified Latency & Throughput Benchmark
 
