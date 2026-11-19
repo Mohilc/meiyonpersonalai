@@ -360,6 +360,8 @@ The 3D performance landscape above visualizes model execution latency across two
 - **Top Crimson Surface (`mistral-large-4-1t-a52b`)**: Illustrates the high latency plateaus (28s–36s) and vulnerability to 504 timeouts caused by heavy tool schema overhead on 1T parameter models.
 - **Bottom Emerald Surface (`nvidia/nemotron-3.5-bolt-e4b`)**: Shows the optimized, ultra-flat execution baseline (0.69s–4.10s) delivering up to **51.3x faster** responses across all load tiers.
 
+> 🎮 **Interactive 3D Performance Explorer**: Open [`docs/interactive_model_performance.html`](docs/interactive_model_performance.html) in any browser to rotate the 3D model space in real-time, inspect task deltas, and toggle between Latency (Seconds) and Speedup Multipliers (Nx).
+
 ### Quantified Latency & Throughput Benchmark
 
 | Task Category | Evaluated Workload | Original (Mistral 1T MoE + Retries) | Optimized (Nemotron 3.5 Bolt) | Speedup Factor | % Latency Reduction | Operational Impact |

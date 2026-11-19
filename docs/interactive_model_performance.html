@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meiyon AI - Model Performance & Latency Benchmark</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --canvas-bg: transparent;
+    }
+    canvas {
+      touch-action: none;
+      user-select: none;
+    }
+    .badge-glow-green {
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    }
+    .badge-glow-red {
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-0 m-0 font-sans selection:bg-emerald-500 selection:text-white">
+  <div class="w-full max-w-4xl mx-auto py-1 px-2 space-y-2.5">
+    
+    <!-- Top Header & Metrics Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--card-border)]">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 font-bold text-xs">3D</span>
+          <h2 class="text-sm font-semibold tracking-tight text-[var(--foreground)]">Model Latency & Performance Improvement</h2>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+          Drag to rotate 3D view | Hover / click columns to inspect metrics
+        </p>
+      </div>
+
+      <!-- Quick KPI Chips -->
+      <div class="flex items-center gap-1.5 flex-wrap text-xs">
+        <div class="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>51.3x Faster</span>
+        </div>
+        <div class="flex items-center gap-1 px-2 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-medium">
+          <span>&lt; 50ms Typing Pulse</span>
+        </div>
+        <div class="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium">
+          <span>0% Timeouts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Controls Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[var(--card)]/40 p-1.5 rounded-lg border border-[var(--card-border)]">
+      <!-- View Mode Buttons -->
+      <div class="flex items-center gap-1">
+        <span class="text-[var(--muted-foreground)] mr-1 hidden sm:inline">View:</span>
+        <button id="btn-mode-latency" class="px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all">
+          ⏱️ Latency (Seconds)
+        </button>
+        <button id="btn-mode-speedup" class="px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all">
+          🚀 Speedup (Nx)
+        </button>
+      </div>
+
+      <!-- Task Quick Filters -->
+      <div class="flex items-center gap-1 overflow-x-auto py-0.5">
+        <button data-task="all" class="task-btn px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-[var(--foreground)]">All Tasks</button>
+        <button data-task="0" class="task-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Greeting</button>
+        <button data-task="1" class="task-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Agenda</button>
+        <button data-task="2" class="task-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Briefing</button>
+        <button data-task="3" class="task-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Multi-Tool</button>
+      </div>
+
+      <!-- Rotation & Reset Controls -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-autorotate" class="px-2 py-1 rounded text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-[var(--card-border)]">
+          Auto-Rotate: <span id="auto-state" class="text-emerald-400 font-semibold">ON</span>
+        </button>
+        <button id="btn-reset" class="px-2 py-1 rounded text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-[var(--card-border)]" title="Reset View Angle">
+          ↺ Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div class="relative w-full rounded-xl overflow-hidden border border-[var(--card-border)] bg-gradient-to-b from-[#090d16] to-[#04060a]">
+      <canvas id="benchmarkCanvas" class="w-full h-[290px] block cursor-grab active:cursor-grabbing"></canvas>
+
+      <!-- 3D Legends Overlay -->
+      <div class="absolute top-2.5 left-3 flex flex-col gap-1.5 pointer-events-none text-[11px]">
+        <div class="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded border border-rose-500/30 text-rose-300 font-medium">
+          <span class="w-2.5 h-2.5 rounded-sm bg-rose-500 shadow-sm shadow-rose-500/50"></span>
+          <span>Previous: Mistral Large 1T MoE (Slow: 30-38s)</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-300 font-medium">
+          <span class="w-2.5 h-2.5 rounded-sm bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+          <span>Optimized: NVIDIA Nemotron 3.5 Bolt (Fast: 0.69-3.7s)</span>
+        </div>
+      </div>
+
+      <!-- Drag Hint -->
+      <div class="absolute bottom-2.5 right-3 text-[10px] text-zinc-400 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded pointer-events-none">
+        ⇄ Click & Drag to Rotate | Scroll to Zoom
+      </div>
+
+      <!-- Floating Hover Tooltip -->
+      <div id="tooltip" class="absolute hidden pointer-events-none z-20 bg-zinc-900/95 backdrop-blur-md text-white text-xs rounded-lg p-2.5 shadow-2xl border border-zinc-700 max-w-[240px] transition-opacity duration-150">
+        <div id="tt-title" class="font-bold text-emerald-400 border-b border-zinc-700/80 pb-1 mb-1.5">Task Name</div>
+        <div class="space-y-1 text-[11px]">
+          <div class="flex justify-between items-center text-rose-300">
+            <span>Before (Mistral):</span>
+            <span id="tt-before" class="font-mono font-semibold">35.37s</span>
+          </div>
+          <div class="flex justify-between items-center text-emerald-300">
+            <span>After (Nemotron):</span>
+            <span id="tt-after" class="font-mono font-semibold">0.69s</span>
+          </div>
+          <div class="flex justify-between items-center text-cyan-300 pt-1 border-t border-zinc-800 font-medium">
+            <span>Improvement:</span>
+            <span id="tt-speedup" class="font-mono font-bold text-cyan-400">51.3x faster (98%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact Interactive Comparison Table -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+      <div class="p-2 rounded-lg bg-[var(--card)]/50 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
+        <div class="text-[10px] text-[var(--muted-foreground)]">Greeting / "Hi"</div>
+        <div class="text-sm font-bold text-emerald-400">0.69s <span class="text-[10px] text-zinc-400 line-through">35.4s</span></div>
+        <div class="text-[10px] font-medium text-cyan-400">🚀 51.3x Faster</div>
+      </div>
+      <div class="p-2 rounded-lg bg-[var(--card)]/50 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
+        <div class="text-[10px] text-[var(--muted-foreground)]">Agenda Query</div>
+        <div class="text-sm font-bold text-emerald-400">3.12s <span class="text-[10px] text-zinc-400 line-through">31.2s</span></div>
+        <div class="text-[10px] font-medium text-cyan-400">🚀 10.0x Faster</div>
+      </div>
+      <div class="p-2 rounded-lg bg-[var(--card)]/50 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
+        <div class="text-[10px] text-[var(--muted-foreground)]">Daily /briefing</div>
+        <div class="text-sm font-bold text-emerald-400">3.70s <span class="text-[10px] text-zinc-400 line-through">38.5s</span></div>
+        <div class="text-[10px] font-medium text-cyan-400">🚀 10.4x Faster</div>
+      </div>
+      <div class="p-2 rounded-lg bg-[var(--card)]/50 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
+        <div class="text-[10px] text-[var(--muted-foreground)]">Multi-Tool Reasoning</div>
+        <div class="text-sm font-bold text-emerald-400">4.45s <span class="text-[10px] text-zinc-400 line-through">32.1s</span></div>
+        <div class="text-[10px] font-medium text-cyan-400">🚀 7.2x Faster</div>
+      </div>
+      <div class="col-span-2 sm:col-span-1 p-2 rounded-lg bg-[var(--card)]/50 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
+        <div class="text-[10px] text-[var(--muted-foreground)]">Typing Indicator</div>
+        <div class="text-sm font-bold text-emerald-400">&lt; 0.05s <span class="text-[10px] text-zinc-400 line-through">None</span></div>
+        <div class="text-[10px] font-medium text-emerald-400">⚡ Instant Feedback</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Benchmark Data ---
+    const BENCHMARK_DATA = [
+      {
+        id: 0,
+        name: "Conversational Greeting",
+        short: "Greeting",
+        before: 35.37,
+        after: 0.69,
+        speedup: 51.3,
+        delta: -34.68,
+        dropPercent: 98.0
+      },
+      {
+        id: 1,
+        name: "Agenda & Schedule Query",
+        short: "Agenda",
+        before: 31.20,
+        after: 3.12,
+        speedup: 10.0,
+        delta: -28.08,
+        dropPercent: 90.0
+      },
+      {
+        id: 2,
+        name: "Daily AI Briefing (/briefing)",
+        short: "Briefing",
+        before: 38.45,
+        after: 3.70,
+        speedup: 10.4,
+        delta: -34.75,
+        dropPercent: 90.4
+      },
+      {
+        id: 3,
+        name: "Multi-Tool Complex Reasoning",
+        short: "Multi-Tool",
+        before: 32.10,
+        after: 4.45,
+        speedup: 7.2,
+        delta: -27.65,
+        dropPercent: 86.1
+      },
+      {
+        id: 4,
+        name: "Telegram Webhook Response",
+        short: "Webhook",
+        before: 28.50,
+        after: 0.42,
+        speedup: 67.9,
+        delta: -28.08,
+        dropPercent: 98.5
+      }
+    ];
+
+    // --- Canvas & 3D Math Engine ---
+    const canvas = document.getElementById('benchmarkCanvas');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('tooltip');
+
+    let currentMode = 'latency'; // 'latency' | 'speedup'
+    let selectedFilter = 'all';  // 'all' | 0 | 1 | 2 | 3 | 4
+    let autoRotate = true;
+    let hoveredItem = null;
+
+    // View angles & zoom
+    let yaw = 0.52;      // Horizontal rotation (~30 deg)
+    let pitch = 0.38;    // Elevation angle (~22 deg)
+    let zoom = 1.0;
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+
+    // Resize handling with devicePixelRatio for high-DPI crystal clarity
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // 3D Perspective Projection
+    function project3D(x, y, z, cx, cy) {
+      // Rotate around Y axis (Yaw)
+      const cosY = Math.cos(yaw);
+      const sinY = Math.sin(yaw);
+      const x1 = x * cosY - z * sinY;
+      const z1 = x * sinY + z * cosY;
+
+      // Rotate around X axis (Pitch)
+      const cosP = Math.cos(pitch);
+      const sinP = Math.sin(pitch);
+      const y2 = y * cosP - z1 * sinP;
+      const z2 = y * sinP + z1 * cosP;
+
+      // Camera distance and perspective factor
+      const camDist = 380;
+      const perspective = camDist / (camDist + z2 + 180);
+
+      return {
+        x: cx + x1 * perspective * zoom,
+        y: cy - y2 * perspective * zoom,
+        scale: perspective * zoom,
+        depth: z2
+      };
+    }
+
+    // Draw a 3D Extruded Prism (Column)
+    function drawPrism(x, z, width, depth, height, colorTop, colorFront, colorSide, outlineColor, isHighlighted) {
+      const hw = width / 2;
+      const hd = depth / 2;
+
+      // 8 Vertices of the 3D Box
+      // Bottom: 0: (-hw, 0, -hd), 1: (hw, 0, -hd), 2: (hw, 0, hd), 3: (-hw, 0, hd)
+      // Top:    4: (-hw, h, -hd), 5: (hw, h, -hd), 6: (hw, h, hd), 7: (-hw, h, hd)
+      const localVertices = [
+        { x: x - hw, y: 0, z: z - hd },
+        { x: x + hw, y: 0, z: z - hd },
+        { x: x + hw, y: 0, z: z + hd },
+        { x: x - hw, y: 0, z: z + hd },
+        { x: x - hw, y: height, z: z - hd },
+        { x: x + hw, y: height, z: z - hd },
+        { x: x + hw, y: height, z: z + hd },
+        { x: x - hw, y: height, z: z + hd }
+      ];
+
+      const cx = canvas.clientWidth / 2;
+      const cy = canvas.clientHeight / 2 + 35;
+      const proj = localVertices.map(v => project3D(v.x, v.y, v.z, cx, cy));
+
+      // Faces definition
+      const faces = [
+        { indices: [4, 5, 6, 7], fill: colorTop, isTop: true },    // Top
+        { indices: [3, 2, 6, 7], fill: colorFront, isFront: true }, // Front (+Z)
+        { indices: [1, 2, 6, 5], fill: colorSide, isSide: true },  // Right (+X)
+        { indices: [0, 3, 7, 4], fill: colorSide, isSide: true },  // Left (-X)
+        { indices: [0, 1, 5, 4], fill: colorFront, isBack: true }  // Back (-Z)
+      ];
+
+      // Sort faces by average depth so furthest draw first
+      faces.forEach(f => {
+        f.avgZ = (proj[f.indices[0]].depth + proj[f.indices[1]].depth + proj[f.indices[2]].depth + proj[f.indices[3]].depth) / 4;
+      });
+      faces.sort((a, b) => b.avgZ - a.avgZ);
+
+      // Render visible faces
+      faces.forEach(face => {
+        const pts = face.indices.map(i => proj[i]);
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+          ctx.lineTo(pts[i].x, pts[i].y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = face.fill;
+        ctx.fill();
+
+        ctx.strokeStyle = isHighlighted ? '#ffffff' : outlineColor;
+        ctx.lineWidth = isHighlighted ? 1.8 : 0.8;
+        ctx.stroke();
+      });
+
+      // Return projected top center for floating labels
+      const topCenterProj = project3D(x, height, z, cx, cy);
+      return {
+        topProj: topCenterProj,
+        baseProj: project3D(x, 0, z, cx, cy),
+        projVertices: proj
+      };
+    }
+
+    // Main Draw Routine
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const cx = w / 2;
+      const cy = h / 2 + 35;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Draw 3D Isometric Floor Grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      const gridSize = 220;
+      const step = 44;
+
+      for (let gx = -gridSize; gx <= gridSize; gx += step) {
+        const p1 = project3D(gx, 0, -gridSize, cx, cy);
+        const p2 = project3D(gx, 0, gridSize, cx, cy);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+      for (let gz = -gridSize; gz <= gridSize; gz += step) {
+        const p1 = project3D(-gridSize, 0, gz, cx, cy);
+        const p2 = project3D(gridSize, 0, gz, cx, cy);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+
+      // 2. Compute Column Render List
+      const spacingX = 72;
+      const zBefore = -48;
+      const zAfter = 48;
+      const colWidth = 20;
+      const colDepth = 24;
+      const maxVal = currentMode === 'latency' ? 42 : 72;
+      const maxHeightPx = 135;
+
+      const renderQueue = [];
+
+      BENCHMARK_DATA.forEach((task, index) => {
+        if (selectedFilter !== 'all' && selectedFilter != index) return;
+
+        const posX = (index - 2) * spacingX;
+
+        // Heights
+        let valBefore, valAfter;
+        if (currentMode === 'latency') {
+          valBefore = task.before;
+          valAfter = task.after;
+        } else {
+          valBefore = 1.0;
+          valAfter = task.speedup;
+        }
+
+        const hBefore = Math.max(6, (valBefore / maxVal) * maxHeightPx);
+        const hAfter = Math.max(6, (valAfter / maxVal) * maxHeightPx);
+
+        // Before Column (Mistral - Red/Coral)
+        renderQueue.push({
+          taskId: task.id,
+          taskName: task.short,
+          fullTask: task,
+          type: 'before',
+          x: posX,
+          z: zBefore,
+          width: colWidth,
+          depth: colDepth,
+          height: hBefore,
+          value: valBefore,
+          topColor: 'rgba(244, 63, 94, 0.95)',
+          frontColor: 'rgba(225, 29, 72, 0.85)',
+          sideColor: 'rgba(159, 18, 57, 0.85)',
+          outline: 'rgba(255, 100, 130, 0.4)'
+        });
+
+        // After Column (Nemotron - Emerald/Cyan)
+        renderQueue.push({
+          taskId: task.id,
+          taskName: task.short,
+          fullTask: task,
+          type: 'after',
+          x: posX,
+          z: zAfter,
+          width: colWidth,
+          depth: colDepth,
+          height: hAfter,
+          value: valAfter,
+          topColor: 'rgba(52, 211, 153, 0.95)',
+          frontColor: 'rgba(16, 185, 129, 0.85)',
+          sideColor: 'rgba(5, 150, 105, 0.85)',
+          outline: 'rgba(110, 231, 183, 0.5)'
+        });
+      });
+
+      // Sort columns by depth for correct 3D occlusion
+      renderQueue.forEach(item => {
+        const centerProj = project3D(item.x, 0, item.z, cx, cy);
+        item.screenDepth = centerProj.depth;
+      });
+      renderQueue.sort((a, b) => b.screenDepth - a.screenDepth);
+
+      // 3. Render Columns and Connection Bridges
+      renderQueue.forEach(item => {
+        const isSelected = hoveredItem && hoveredItem.taskId === item.taskId;
+        const res = drawPrism(
+          item.x, item.z, item.width, item.depth, item.height,
+          item.topColor, item.frontColor, item.sideColor, item.outline,
+          isSelected
+        );
+        item.renderResult = res;
+
+        // Draw Value Label on top of column
+        const tp = res.topProj;
+        ctx.save();
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = item.type === 'before' ? '#fca5a5' : '#6ee7b7';
+        const labelText = currentMode === 'latency' ? `${item.value.toFixed(1)}s` : `${item.value.toFixed(0)}x`;
+        ctx.fillText(labelText, tp.x, tp.y - 6);
+        ctx.restore();
+      });
+
+      // 4. Draw Delta Speedup Ribbons between Before and After pairs
+      BENCHMARK_DATA.forEach((task, index) => {
+        if (selectedFilter !== 'all' && selectedFilter != index) return;
+        const posX = (index - 2) * spacingX;
+
+        const pBefore = project3D(posX, 0, zBefore, cx, cy);
+        const pAfter = project3D(posX, 0, zAfter, cx, cy);
+
+        // Ground connector line
+        ctx.beginPath();
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.moveTo(pBefore.x, pBefore.y);
+        ctx.lineTo(pAfter.x, pAfter.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Task Name on Floor
+        const midPoint = project3D(posX, 0, (zBefore + zAfter) / 2, cx, cy);
+        ctx.save();
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillText(task.short, midPoint.x, midPoint.y + 16);
+
+        // Speedup pill badge
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`+${task.speedup}x`, midPoint.x, midPoint.y + 27);
+        ctx.restore();
+      });
+    }
+
+    // --- Animation Loop ---
+    let animId;
+    function animate() {
+      if (autoRotate && !isDragging) {
+        yaw += 0.005;
+        draw();
+      }
+      animId = requestAnimationFrame(animate);
+    }
+
+    // --- Interactive Mouse & Touch Dragging ---
+    canvas.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      autoRotate = false;
+      document.getElementById('auto-state').textContent = 'OFF';
+      document.getElementById('auto-state').className = 'text-zinc-400 font-semibold';
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        yaw += dx * 0.009;
+        pitch = Math.max(0.08, Math.min(1.2, pitch - dy * 0.009));
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        draw();
+      } else {
+        handleHover(e);
+      }
+    });
+
+    // Touch Support for Mobile / Trackpads
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+        autoRotate = false;
+        document.getElementById('auto-state').textContent = 'OFF';
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - lastMouseX;
+        const dy = e.touches[0].clientY - lastMouseY;
+        yaw += dx * 0.01;
+        pitch = Math.max(0.08, Math.min(1.2, pitch - dy * 0.01));
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
+        draw();
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    // Mouse Wheel Zoom
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      zoom = Math.max(0.65, Math.min(1.6, zoom - e.deltaY * 0.0012));
+      draw();
+    }, { passive: false });
+
+    // Hover Detection
+    function handleHover(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      let found = null;
+      const cx = canvas.clientWidth / 2;
+      const cy = canvas.clientHeight / 2 + 35;
+      const spacingX = 72;
+
+      BENCHMARK_DATA.forEach((task, index) => {
+        if (selectedFilter !== 'all' && selectedFilter != index) return;
+        const posX = (index - 2) * spacingX;
+        const pMid = project3D(posX, 30, 0, cx, cy);
+
+        // Simple proximity check to column cluster
+        const dist = Math.hypot(mouseX - pMid.x, mouseY - pMid.y);
+        if (dist < 45) {
+          found = { taskId: task.id, task: task, sx: mouseX, sy: mouseY };
+        }
+      });
+
+      if (found) {
+        hoveredItem = found;
+        showTooltip(found.task, e.clientX - rect.left, e.clientY - rect.top);
+        draw();
+      } else {
+        if (hoveredItem) {
+          hoveredItem = null;
+          hideTooltip();
+          draw();
+        }
+      }
+    }
+
+    function showTooltip(task, x, y) {
+      document.getElementById('tt-title').textContent = task.name;
+      document.getElementById('tt-before').textContent = `${task.before.toFixed(2)}s`;
+      document.getElementById('tt-after').textContent = `${task.after.toFixed(2)}s`;
+      document.getElementById('tt-speedup').textContent = `${task.speedup.toFixed(1)}x faster (-${task.dropPercent}%)`;
+
+      tooltip.classList.remove('hidden');
+      const clampX = Math.min(x + 12, canvas.clientWidth - 230);
+      const clampY = Math.max(10, y - 70);
+      tooltip.style.left = `${clampX}px`;
+      tooltip.style.top = `${clampY}px`;
+    }
+
+    function hideTooltip() {
+      tooltip.classList.add('hidden');
+    }
+
+    // --- UI Controls Event Listeners ---
+    const btnLatency = document.getElementById('btn-mode-latency');
+    const btnSpeedup = document.getElementById('btn-mode-speedup');
+
+    btnLatency.addEventListener('click', () => {
+      currentMode = 'latency';
+      btnLatency.className = 'px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all';
+      btnSpeedup.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+      draw();
+    });
+
+    btnSpeedup.addEventListener('click', () => {
+      currentMode = 'speedup';
+      btnSpeedup.className = 'px-2.5 py-1 rounded font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition-all';
+      btnLatency.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+      draw();
+    });
+
+    const btnAutoRotate = document.getElementById('btn-autorotate');
+    btnAutoRotate.addEventListener('click', () => {
+      autoRotate = !autoRotate;
+      const stateEl = document.getElementById('auto-state');
+      stateEl.textContent = autoRotate ? 'ON' : 'OFF';
+      stateEl.className = autoRotate ? 'text-emerald-400 font-semibold' : 'text-zinc-400 font-semibold';
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      yaw = 0.52;
+      pitch = 0.38;
+      zoom = 1.0;
+      autoRotate = true;
+      document.getElementById('auto-state').textContent = 'ON';
+      document.getElementById('auto-state').className = 'text-emerald-400 font-semibold';
+      draw();
+    });
+
+    // Task Filter Buttons
+    document.querySelectorAll('.task-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.task-btn').forEach(b => {
+          b.className = 'task-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+        });
+        btn.className = 'task-btn px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-[var(--foreground)]';
+        selectedFilter = btn.dataset.task;
+        draw();
+      });
+    });
+
+    // Initial setup
+    resizeCanvas();
+    animate();
+  </script>
+</body>
+</html>
