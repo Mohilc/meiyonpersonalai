@@ -478,7 +478,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"📋 *Active Commitments & Tasks*",
             f"• *Pending:* {len(tasks)} tasks on your board\n"
         ]
-        for idx, t in enumerate(tasks[:20], 1):
+        for idx, t in enumerate(tasks[:50], 1):
             due = f" • Due: `{t.due_date[:10]}`" if t.due_date else ""
             pri_badge = "🔴 URGENT" if t.priority.value == "P1_URGENT" else ("🟡 HIGH" if t.priority.value == "P2_HIGH" else "🟢 NORMAL")
             short_id = t.id[:8]

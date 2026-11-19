@@ -352,15 +352,16 @@ Meiyon's conversational and autonomous reasoning engine underwent rigorous perfo
 
 ![Meiyon 3D Model Performance & Latency Benchmark](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/model_latency_benchmark.png)
 
-### 3D Latency & Scalability Topology
-The 3D performance landscape above visualizes model execution latency across two continuous operational dimensions:
-- **X-Axis (Autonomous Tool Complexity)**: Single-turn conversational queries (1 step) through complex multi-tool execution chains (5 steps).
-- **Y-Axis (Concurrent Workload Load Tier)**: Scaling token context depth and concurrent mobile inquiry traffic (scale 1 to 10).
-- **Z-Axis (Execution Latency)**: End-to-end response time in seconds.
-- **Top Crimson Surface (`mistral-large-4-1t-a52b`)**: Illustrates the high latency plateaus (28s–36s) and vulnerability to 504 timeouts caused by heavy tool schema overhead on 1T parameter models.
-- **Bottom Emerald Surface (`nvidia/nemotron-3.5-bolt-e4b`)**: Shows the optimized, ultra-flat execution baseline (0.69s–4.10s) delivering up to **51.3x faster** responses across all load tiers.
+### 3D Multi-Line Latency & Optimization Trajectory
+The 3D multi-line visualization above charts end-to-end response latency across five core operational workloads:
+- **X-Axis (Workload Benchmark)**: Conversational chat (`"Hi"`), live academic agenda query, executive morning `/briefing`, multi-tool reasoning chains, and real-time webhook polling.
+- **Y-Axis (Model Path)**: Comparative depth channel between the previous model and the optimized edge model.
+- **Z-Axis (Response Latency)**: End-to-end response time in seconds (0s to 40s).
+- **Upper Crimson Trajectory (`mistral-large-4-1t-a52b`)**: Illustrates the elevated 30s–38s latency plateau and timeout exposure caused by heavy tool schema overhead on 1T parameter models.
+- **Lower Emerald Trajectory (`nvidia/nemotron-3.5-bolt-e4b`)**: Shows the optimized, sub-second execution baseline (0.42s–4.45s) delivering up to **51.3x faster** responses with zero timeouts.
+- **Cyan Acceleration Vectors**: Connect data nodes at each workload to illustrate the drastic 86%–98% latency reduction across every operational tier.
 
-> 🎮 **Interactive 3D Performance Explorer**: Open [`docs/interactive_model_performance.html`](docs/interactive_model_performance.html) in any browser to rotate the 3D model space in real-time, inspect task deltas, and toggle between Latency (Seconds) and Speedup Multipliers (Nx).
+> 🎮 **Interactive 3D Multi-Line Explorer**: Open [`docs/interactive_model_performance.html`](docs/interactive_model_performance.html) in any browser to orbit the 3D lines in real-time, toggle line visibility, and inspect data point coordinates.
 
 ### Quantified Latency & Throughput Benchmark
 

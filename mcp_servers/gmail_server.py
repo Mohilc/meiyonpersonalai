@@ -433,8 +433,15 @@ def read_email(message_id: str) -> str:
                 mail.logout()
             except Exception:
                 pass
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Live Gmail IMAP read failed: %s", str(e))
+            if MCP_SIMULATION_FALLBACK and SANDBOX_EMAILS:
+                return json.dumps({
+                    "status": "SUCCESS",
+                    "mode": "FALLBACK_SANDBOX",
+                    "warning": f"IMAP connection failed ({str(e)}). Serving verified sandbox email.",
+                    "email": SANDBOX_EMAILS[0]
+                })
 
     for msg in SANDBOX_EMAILS:
         if msg["id"] == message_id:

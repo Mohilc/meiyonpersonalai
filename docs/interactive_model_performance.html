@@ -3,266 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meiyon AI - 3D Financial Stock & Latency Chart</title>
+  <title>Meiyon AI - 3D Multi-Line Model Latency Benchmark</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     canvas {
       touch-action: none;
       user-select: none;
     }
-    @keyframes ticker-scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .ticker-track {
-      display: inline-flex;
-      white-space: nowrap;
-      animation: ticker-scroll 24s linear infinite;
-    }
-    .ticker-track:hover {
-      animation-play-state: paused;
-    }
   </style>
 </head>
 <body class="bg-transparent text-[var(--foreground)] antialiased p-0 m-0 font-sans selection:bg-emerald-500 selection:text-white">
   <div class="w-full max-w-4xl mx-auto py-1 px-2 space-y-2">
     
-    <!-- Top Stock Ticker Ribbon -->
-    <div class="overflow-hidden border-y border-[var(--card-border)] bg-black/60 py-1 text-[11px] font-mono tracking-tight text-zinc-300">
-      <div class="ticker-track">
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-emerald-400 font-bold">$NEMO-35:</strong>
-          <span>0.69s</span>
-          <span class="text-emerald-400 font-semibold">▲ +5,130% SPEED</span>
-        </span>
-        <span class="text-zinc-600">|</span>
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-rose-400 font-bold">$MSTR-1T:</strong>
-          <span>35.37s</span>
-          <span class="text-rose-400 font-semibold">▼ -98.0% CRASH</span>
-        </span>
-        <span class="text-zinc-600">|</span>
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-cyan-400 font-bold">VOLATILITY:</strong>
-          <span class="text-emerald-400">0% TIMEOUTS (ALL-TIME HIGH RELIABILITY)</span>
-        </span>
-        <span class="text-zinc-600">|</span>
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-amber-400 font-bold">TYPING_PULSE:</strong>
-          <span>&lt; 50ms INSTANT FEEDBACK</span>
-        </span>
-        <span class="text-zinc-600">|</span>
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-purple-400 font-bold">THROUGHPUT_RALLY:</strong>
-          <span>51.3x MULTIPLIER</span>
-        </span>
-        <!-- Duplicate for continuous scroll loop -->
-        <span class="text-zinc-600">|</span>
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-emerald-400 font-bold">$NEMO-35:</strong>
-          <span>0.69s</span>
-          <span class="text-emerald-400 font-semibold">▲ +5,130% SPEED</span>
-        </span>
-        <span class="text-zinc-600">|</span>
-        <span class="inline-flex items-center gap-1.5 px-3">
-          <strong class="text-rose-400 font-bold">$MSTR-1T:</strong>
-          <span>35.37s</span>
-          <span class="text-rose-400 font-semibold">▼ -98.0% CRASH</span>
-        </span>
+    <!-- Top Header -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--card-border)]">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-xs">3D LINE</span>
+          <h2 class="text-sm font-semibold tracking-tight text-[var(--foreground)]">Model Latency Trajectory & Optimization</h2>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+          Continuous 3D multi-line comparison • Drag to rotate view • Hover points to inspect latency
+        </p>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="flex items-center gap-1.5 flex-wrap text-xs">
+        <div class="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>51.3x Faster Peak</span>
+        </div>
+        <div class="flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-medium">
+          <span>-98% Latency Drop</span>
+        </div>
+        <div class="flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 font-medium">
+          <span>&lt; 50ms Typing Pulse</span>
+        </div>
       </div>
     </div>
 
     <!-- Controls Bar -->
     <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[var(--card)]/40 p-1.5 rounded-lg border border-[var(--card-border)]">
-      <!-- Chart Style Toggle (Candlestick vs Mountain Ribbon) -->
+      <!-- Line Visibility Toggles -->
       <div class="flex items-center gap-1">
-        <span class="text-[var(--muted-foreground)] mr-1 hidden sm:inline">Stock Style:</span>
-        <button id="btn-candlestick" class="px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all">
-          📊 3D Candlestick & Volume
+        <span class="text-[var(--muted-foreground)] mr-1 hidden sm:inline">Lines:</span>
+        <button id="btn-show-both" class="px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all">
+          Both Models
         </button>
-        <button id="btn-mountain" class="px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all">
-          📈 3D Mountain Ribbon Trend
+        <button id="btn-show-optimized" class="px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all">
+          Optimized Only
+        </button>
+        <button id="btn-show-previous" class="px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all">
+          Previous Only
         </button>
       </div>
 
-      <!-- Quick Session Scrubbers -->
+      <!-- Workload Focus Quick Pills -->
       <div class="flex items-center gap-1 overflow-x-auto py-0.5">
-        <button data-tick="all" class="tick-btn px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-[var(--foreground)]">All Ticks</button>
-        <button data-tick="0" class="tick-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">T1: Chat</button>
-        <button data-tick="1" class="tick-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">T2: Agenda</button>
-        <button data-tick="2" class="tick-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">T3: Brief</button>
-        <button data-tick="3" class="tick-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">T4: Tools</button>
-        <button data-tick="4" class="tick-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">T5: Webhook</button>
+        <button data-task="all" class="task-pill px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-[var(--foreground)]">All Workloads</button>
+        <button data-task="0" class="task-pill px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Chat</button>
+        <button data-task="1" class="task-pill px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Agenda</button>
+        <button data-task="2" class="task-pill px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Briefing</button>
+        <button data-task="3" class="task-pill px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Multi-Tool</button>
       </div>
 
-      <!-- Orbit & Reset -->
+      <!-- 3D Orbit Controls -->
       <div class="flex items-center gap-1.5">
         <button id="btn-autorotate" class="px-2 py-1 rounded text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-[var(--card-border)]">
-          Auto-Orbit: <span id="auto-state" class="text-emerald-400 font-semibold">ON</span>
+          Auto-Rotate: <span id="auto-state" class="text-emerald-400 font-semibold">ON</span>
         </button>
-        <button id="btn-reset" class="px-2 py-1 rounded text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-[var(--card-border)]" title="Reset View">
+        <button id="btn-reset" class="px-2 py-1 rounded text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-[var(--card-border)]" title="Reset View Angle">
           ↺ Reset
         </button>
       </div>
     </div>
 
-    <!-- 3D Stock Canvas Viewport -->
-    <div class="relative w-full rounded-xl overflow-hidden border border-[var(--card-border)] bg-gradient-to-b from-[#070b14] via-[#05080e] to-[#020408]">
-      <canvas id="stockCanvas" class="w-full h-[300px] block cursor-grab active:cursor-grabbing"></canvas>
+    <!-- 3D Canvas Container -->
+    <div class="relative w-full rounded-xl overflow-hidden border border-[var(--card-border)] bg-gradient-to-b from-[#0a0f1d] via-[#070b14] to-[#04060a]">
+      <canvas id="line3DCanvas" class="w-full h-[290px] block cursor-grab active:cursor-grabbing"></canvas>
 
-      <!-- TradingView Style Market Legend Overlay -->
+      <!-- 3D Legend Overlay -->
       <div class="absolute top-2.5 left-3 flex flex-col gap-1.5 pointer-events-none text-[11px]">
-        <div class="flex items-center gap-2 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded border border-rose-500/40 text-rose-300 font-mono shadow-lg">
-          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-md shadow-rose-500"></span>
-          <span>$MSTR (Old Mistral 1T): High Latency Bear Crash (35.4s)</span>
+        <div class="flex items-center gap-2 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded border border-rose-500/40 text-rose-300 font-medium shadow-md">
+          <span class="w-3 h-0.5 bg-rose-500 rounded"></span>
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          <span>Previous Model: Mistral Large 1T MoE (30s – 38s)</span>
         </div>
-        <div class="flex items-center gap-2 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-300 font-mono shadow-lg">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400"></span>
-          <span>$NEMO (Optimized Nemotron): Sub-Second Bull Rally (0.69s)</span>
+        <div class="flex items-center gap-2 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-300 font-medium shadow-md">
+          <span class="w-3 h-0.5 bg-emerald-400 rounded"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Optimized Model: NVIDIA Nemotron 3.5 Bolt (0.69s – 4.45s)</span>
         </div>
       </div>
 
       <!-- Drag & Zoom Hint -->
-      <div class="absolute bottom-2.5 right-3 text-[10px] text-zinc-400 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-zinc-800 pointer-events-none font-mono">
-        ⇄ 3D Orbit: Click & Drag | Zoom: Wheel / Pinch
+      <div class="absolute bottom-2.5 right-3 text-[10px] text-zinc-400 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-zinc-800 pointer-events-none">
+        ⇄ Click & Drag to Orbit 3D • Scroll to Zoom
       </div>
 
-      <!-- Stock Telemetry Crosshair Tooltip -->
-      <div id="stockTooltip" class="absolute hidden pointer-events-none z-20 bg-zinc-950/95 backdrop-blur-md text-white text-xs rounded-lg p-2.5 shadow-2xl border border-zinc-700 max-w-[260px] font-mono transition-opacity">
-        <div class="flex justify-between items-center border-b border-zinc-800 pb-1 mb-1.5">
-          <span id="st-ticker" class="font-bold text-emerald-400 text-sm">$NEMO TICK #1</span>
-          <span id="st-task" class="text-[10px] text-zinc-400 font-sans">Greeting Chat</span>
-        </div>
+      <!-- Point Inspection Tooltip -->
+      <div id="lineTooltip" class="absolute hidden pointer-events-none z-20 bg-zinc-950/95 backdrop-blur-md text-white text-xs rounded-lg p-2.5 shadow-2xl border border-zinc-700 max-w-[240px] transition-opacity duration-150">
+        <div id="tt-title" class="font-bold text-emerald-400 border-b border-zinc-800 pb-1 mb-1.5">Workload Name</div>
         <div class="space-y-1 text-[11px]">
           <div class="flex justify-between items-center text-rose-300">
-            <span>Open (High Latency):</span>
-            <span id="st-open" class="font-semibold">35.37s</span>
+            <span>Previous Latency:</span>
+            <span id="tt-prev" class="font-mono font-semibold">35.37s</span>
           </div>
           <div class="flex justify-between items-center text-emerald-300">
-            <span>Close (Optimized):</span>
-            <span id="st-close" class="font-semibold">0.69s</span>
-          </div>
-          <div class="flex justify-between items-center text-zinc-400">
-            <span>Range [Low / High]:</span>
-            <span id="st-range">0.65s - 38.5s</span>
+            <span>Optimized Latency:</span>
+            <span id="tt-opt" class="font-mono font-semibold">0.69s</span>
           </div>
           <div class="flex justify-between items-center text-cyan-300 pt-1 border-t border-zinc-800 font-bold">
-            <span>Bullish Rally:</span>
-            <span id="st-speedup" class="text-cyan-400">+51.3x (98% drop)</span>
+            <span>Speedup Factor:</span>
+            <span id="tt-speedup" class="font-mono text-cyan-400">51.3x (-98.0%)</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Financial Market KPI Bar -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+    <!-- Summary Task Breakdown Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
       <div class="p-2 rounded-lg bg-[var(--card)]/40 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
-        <div class="text-[10px] text-[var(--muted-foreground)] uppercase">Latency Drop</div>
-        <div class="text-base font-bold text-rose-400">▼ 98.0%</div>
-        <div class="text-[10px] text-zinc-400">35.37s ➔ 0.69s</div>
+        <div class="text-[10px] text-[var(--muted-foreground)]">Conversational Chat</div>
+        <div class="text-sm font-bold text-emerald-400">0.69s <span class="text-[10px] text-zinc-500 line-through">35.4s</span></div>
+        <div class="text-[10px] font-semibold text-cyan-400">51.3x Faster (-98%)</div>
       </div>
       <div class="p-2 rounded-lg bg-[var(--card)]/40 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
-        <div class="text-[10px] text-[var(--muted-foreground)] uppercase">Speedup Multiplier</div>
-        <div class="text-base font-bold text-emerald-400">▲ +51.3x</div>
-        <div class="text-[10px] text-emerald-500/80">Bullish Supercycle</div>
+        <div class="text-[10px] text-[var(--muted-foreground)]">Agenda & Attendance</div>
+        <div class="text-sm font-bold text-emerald-400">3.12s <span class="text-[10px] text-zinc-500 line-through">31.2s</span></div>
+        <div class="text-[10px] font-semibold text-cyan-400">10.0x Faster (-90%)</div>
       </div>
       <div class="p-2 rounded-lg bg-[var(--card)]/40 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
-        <div class="text-[10px] text-[var(--muted-foreground)] uppercase">24/7 Reliability</div>
-        <div class="text-base font-bold text-cyan-400">100.0%</div>
-        <div class="text-[10px] text-cyan-500/80">0 Timeouts / 0 Retries</div>
+        <div class="text-[10px] text-[var(--muted-foreground)]">Daily /briefing</div>
+        <div class="text-sm font-bold text-emerald-400">3.70s <span class="text-[10px] text-zinc-500 line-through">38.5s</span></div>
+        <div class="text-[10px] font-semibold text-cyan-400">10.4x Faster (-90%)</div>
       </div>
       <div class="p-2 rounded-lg bg-[var(--card)]/40 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
-        <div class="text-[10px] text-[var(--muted-foreground)] uppercase">Instant Feedback</div>
-        <div class="text-base font-bold text-purple-400">&lt; 50ms</div>
-        <div class="text-[10px] text-purple-400/80">Typing Pulse Cue</div>
+        <div class="text-[10px] text-[var(--muted-foreground)]">Multi-Tool Reasoning</div>
+        <div class="text-sm font-bold text-emerald-400">4.45s <span class="text-[10px] text-zinc-500 line-through">32.1s</span></div>
+        <div class="text-[10px] font-semibold text-cyan-400">7.2x Faster (-86%)</div>
+      </div>
+      <div class="col-span-2 sm:col-span-1 p-2 rounded-lg bg-[var(--card)]/40 border border-[var(--card-border)] hover:border-emerald-500/40 transition-colors">
+        <div class="text-[10px] text-[var(--muted-foreground)]">Typing Indicator</div>
+        <div class="text-sm font-bold text-emerald-400">&lt; 0.05s <span class="text-[10px] text-zinc-500 line-through">None</span></div>
+        <div class="text-[10px] font-semibold text-emerald-400">Instant Feedback</div>
       </div>
     </div>
 
   </div>
 
   <script>
-    // --- Financial Candlestick & Trajectory Dataset ---
-    const TICKS = [
+    // --- Benchmark Data ---
+    const TASKS = [
       {
         id: 0,
-        task: "Casual Greeting ('Hi')",
-        short: "Chat",
-        // Financial Candlestick attributes for Latency in seconds
-        high: 38.4,
-        open: 35.37,   // Mistral latency
-        close: 0.69,   // Nemotron latency
-        low: 0.65,
-        volume: 980,   // ops / throughput score
+        name: "Conversational Greeting",
+        short: "Chat ('Hi')",
+        prevLatency: 35.37,
+        optLatency: 0.69,
         speedup: 51.3,
-        drop: 98.0
+        dropPercent: 98.0
       },
       {
         id: 1,
-        task: "Attendance & Agenda Query",
+        name: "Attendance & Agenda Query",
         short: "Agenda",
-        high: 34.0,
-        open: 31.20,
-        close: 3.12,
-        low: 2.80,
-        volume: 720,
+        prevLatency: 31.20,
+        optLatency: 3.12,
         speedup: 10.0,
-        drop: 90.0
+        dropPercent: 90.0
       },
       {
         id: 2,
-        task: "Daily Executive Briefing",
+        name: "Daily Executive Briefing (/briefing)",
         short: "Briefing",
-        high: 39.5,
-        open: 38.45,
-        close: 3.70,
-        low: 3.10,
-        volume: 680,
+        prevLatency: 38.45,
+        optLatency: 3.70,
         speedup: 10.4,
-        drop: 90.4
+        dropPercent: 90.4
       },
       {
         id: 3,
-        task: "Multi-Tool Complex Chain",
+        name: "Multi-Tool Complex Chain",
         short: "Multi-Tool",
-        high: 36.2,
-        open: 32.10,
-        close: 4.45,
-        low: 3.80,
-        volume: 850,
+        prevLatency: 32.10,
+        optLatency: 4.45,
         speedup: 7.2,
-        drop: 86.1
+        dropPercent: 86.1
       },
       {
         id: 4,
-        task: "Webhook & Poller Pulse",
+        name: "Telegram Webhook & Event Polling",
         short: "Webhook",
-        high: 31.0,
-        open: 28.50,
-        close: 0.42,
-        low: 0.38,
-        volume: 1200,
+        prevLatency: 28.50,
+        optLatency: 0.42,
         speedup: 67.9,
-        drop: 98.5
+        dropPercent: 98.5
       }
     ];
 
     // --- 3D Canvas Engine ---
-    const canvas = document.getElementById('stockCanvas');
+    const canvas = document.getElementById('line3DCanvas');
     const ctx = canvas.getContext('2d');
-    const tooltip = document.getElementById('stockTooltip');
+    const tooltip = document.getElementById('lineTooltip');
 
-    let chartStyle = 'candlestick'; // 'candlestick' | 'mountain'
-    let selectedTick = 'all';
+    let visibleLines = 'both'; // 'both' | 'optimized' | 'previous'
+    let selectedTask = 'all';  // 'all' | 0 | 1 | 2 | 3 | 4
     let autoRotate = true;
-    let hoveredTick = null;
+    let hoveredPoint = null;
 
-    // View Angle (Perspective Projection)
-    let yaw = 0.58;       // Horizontal orbit angle
-    let pitch = 0.35;     // Vertical elevation angle
+    // View Angle (3D Isometric Perspective)
+    let yaw = 0.52;      // Horizontal rotation (~30 deg)
+    let pitch = 0.38;    // Vertical elevation (~22 deg)
     let zoom = 1.05;
     let isDragging = false;
-    let lastX = 0;
-    let lastY = 0;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -274,7 +230,7 @@
     }
     window.addEventListener('resize', resizeCanvas);
 
-    // 3D Perspective Projection Function
+    // 3D Perspective Projection
     function project3D(x, y, z, cx, cy) {
       const cosY = Math.cos(yaw);
       const sinY = Math.sin(yaw);
@@ -287,88 +243,29 @@
       const z2 = y * sinP + z1 * cosP;
 
       const camDist = 420;
-      const p = camDist / (camDist + z2 + 200);
+      const scale = camDist / (camDist + z2 + 200);
 
       return {
-        x: cx + x1 * p * zoom,
-        y: cy - y2 * p * zoom,
-        scale: p * zoom,
+        x: cx + x1 * scale * zoom,
+        y: cy - y2 * scale * zoom,
+        scale: scale * zoom,
         depth: z2
       };
     }
 
-    // Draw 3D Box / Candle Body
-    function draw3DBox(x, z, w, d, yBottom, yTop, fillColor, strokeColor, isHovered) {
-      const hw = w / 2;
-      const hd = d / 2;
-      const height = yTop - yBottom;
-      const cx = canvas.clientWidth / 2;
-      const cy = canvas.clientHeight / 2 + 40;
-
-      const vertices = [
-        { x: x - hw, y: yBottom, z: z - hd },
-        { x: x + hw, y: yBottom, z: z - hd },
-        { x: x + hw, y: yBottom, z: z + hd },
-        { x: x - hw, y: yBottom, z: z + hd },
-        { x: x - hw, y: yTop, z: z - hd },
-        { x: x + hw, y: yTop, z: z - hd },
-        { x: x + hw, y: yTop, z: z + hd },
-        { x: x - hw, y: yTop, z: z + hd }
-      ];
-
-      const proj = vertices.map(v => project3D(v.x, v.y, v.z, cx, cy));
-
-      // Faces with normal / lighting tint
-      const faces = [
-        { idx: [4, 5, 6, 7], alpha: 1.0 },   // Top
-        { idx: [3, 2, 6, 7], alpha: 0.9 },   // Front (+Z)
-        { idx: [1, 2, 6, 5], alpha: 0.8 },   // Right (+X)
-        { idx: [0, 3, 7, 4], alpha: 0.75 },  // Left (-X)
-        { idx: [0, 1, 5, 4], alpha: 0.65 }   // Back (-Z)
-      ];
-
-      faces.forEach(f => {
-        f.avgZ = (proj[f.idx[0]].depth + proj[f.idx[1]].depth + proj[f.idx[2]].depth + proj[f.idx[3]].depth) / 4;
-      });
-      faces.sort((a, b) => b.avgZ - a.avgZ);
-
-      faces.forEach(f => {
-        ctx.beginPath();
-        const p0 = proj[f.idx[0]];
-        ctx.moveTo(p0.x, p0.y);
-        for (let i = 1; i < f.idx.length; i++) {
-          const pt = proj[f.idx[i]];
-          ctx.lineTo(pt.x, pt.y);
-        }
-        ctx.closePath();
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-
-        ctx.strokeStyle = isHovered ? '#ffffff' : strokeColor;
-        ctx.lineWidth = isHovered ? 1.8 : 0.8;
-        ctx.stroke();
-      });
-
-      return {
-        topCenter: project3D(x, yTop, z, cx, cy),
-        baseCenter: project3D(x, yBottom, z, cx, cy),
-        proj: proj
-      };
-    }
-
-    // Main Canvas Render Loop
+    // Main Draw Routine
     function draw() {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       const cx = w / 2;
-      const cy = h / 2 + 40;
+      const cy = h / 2 + 35;
 
       ctx.clearRect(0, 0, w, h);
 
-      // 1. Draw 3D Financial Trading Floor Grid
-      const gridSize = 240;
-      const gridStep = 48;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      // 1. Draw 3D Base Floor Grid & Coordinate Box
+      const gridSize = 220;
+      const gridStep = 44;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
 
       for (let gx = -gridSize; gx <= gridSize; gx += gridStep) {
@@ -388,178 +285,203 @@
         ctx.stroke();
       }
 
-      // 2. Scale factor: Map Latency (0 to 42s) to Canvas 3D Height (0 to 140px)
+      // 2. Compute 3D Coordinates for Data Points
+      // X axis: Tasks spaced from -150 to +150
+      // Z axis: Previous line at z = -45, Optimized line at z = +45
+      // Y axis: Latency in seconds mapped to height (max 42s = 145px)
       const maxLat = 42;
-      const maxHeight = 140;
-      const scaleY = (val) => Math.max(4, (val / maxLat) * maxHeight);
+      const maxHeightPx = 145;
+      const scaleY = (val) => Math.max(4, (val / maxLat) * maxHeightPx);
 
       const spacingX = 75;
+      const zPrev = -45;
+      const zOpt = 45;
 
-      // 3. Render Mode: CANDLESTICK vs MOUNTAIN RIBBON
-      if (chartStyle === 'candlestick') {
-        // Render 3D Candlesticks for each tick
-        TICKS.forEach((tick, idx) => {
-          if (selectedTick !== 'all' && selectedTick != idx) return;
+      const prevPoints = [];
+      const optPoints = [];
+      const floorPrevPoints = [];
+      const floorOptPoints = [];
 
-          const posX = (idx - 2) * spacingX;
-          const isHovered = hoveredTick && hoveredTick.id === tick.id;
+      TASKS.forEach((task, idx) => {
+        const posX = (idx - 2) * spacingX;
+        const yP = scaleY(task.prevLatency);
+        const yO = scaleY(task.optLatency);
 
-          // Wick Line (High to Low)
-          const yHigh = scaleY(tick.high);
-          const yLow = scaleY(tick.low);
-          const pHigh = project3D(posX, yHigh, 0, cx, cy);
-          const pLow = project3D(posX, yLow, 0, cx, cy);
+        prevPoints.push({
+          task: task,
+          idx: idx,
+          pt: project3D(posX, yP, zPrev, cx, cy),
+          rawX: posX,
+          rawY: yP,
+          rawZ: zPrev
+        });
 
-          ctx.beginPath();
-          ctx.strokeStyle = '#34d399';
-          ctx.lineWidth = 1.5;
-          ctx.moveTo(pHigh.x, pHigh.y);
-          ctx.lineTo(pLow.x, pLow.y);
-          ctx.stroke();
+        floorPrevPoints.push(project3D(posX, 0, zPrev, cx, cy));
 
-          // 3D Candle Body: from Close (0.69s) up to Open (35.37s)
-          // In stock charts: Open was high latency, Close was low latency (massive speedup rally!)
-          const yOpen = scaleY(tick.open);
-          const yClose = scaleY(tick.close);
+        optPoints.push({
+          task: task,
+          idx: idx,
+          pt: project3D(posX, yO, zOpt, cx, cy),
+          rawX: posX,
+          rawY: yO,
+          rawZ: zOpt
+        });
 
-          // Top portion (Previous high latency: Crimson / Bearish)
-          draw3DBox(
-            posX, -25, 20, 20, yOpen - 15, yOpen,
-            'rgba(244, 63, 94, 0.85)', 'rgba(251, 113, 133, 0.6)', isHovered
-          );
+        floorOptPoints.push(project3D(posX, 0, zOpt, cx, cy));
+      });
 
-          // Bottom portion (Optimized fast execution: Emerald / Bullish)
-          draw3DBox(
-            posX, 25, 20, 20, 0, yClose,
-            'rgba(16, 185, 129, 0.85)', 'rgba(52, 211, 153, 0.8)', isHovered
-          );
+      // 3. Draw Vertical Drop Stems from points to floor
+      TASKS.forEach((task, idx) => {
+        if (selectedTask !== 'all' && selectedTask != idx) return;
 
-          // 3D Connecting Drop Fiber (the 98% crash in latency)
-          const pOld = project3D(posX, yOpen, -25, cx, cy);
-          const pNew = project3D(posX, yClose, 25, cx, cy);
+        const pPrev = prevPoints[idx].pt;
+        const fPrev = floorPrevPoints[idx];
+        const pOpt = optPoints[idx].pt;
+        const fOpt = floorOptPoints[idx];
+
+        // Vertical drop line to floor for Previous
+        if (visibleLines !== 'optimized') {
           ctx.beginPath();
           ctx.setLineDash([2, 3]);
-          ctx.strokeStyle = isHovered ? '#38bdf8' : 'rgba(56, 189, 248, 0.45)';
-          ctx.lineWidth = isHovered ? 2 : 1;
-          ctx.moveTo(pOld.x, pOld.y);
-          ctx.lineTo(pNew.x, pNew.y);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.25)';
+          ctx.lineWidth = 1;
+          ctx.moveTo(pPrev.x, pPrev.y);
+          ctx.lineTo(fPrev.x, fPrev.y);
           ctx.stroke();
           ctx.setLineDash([]);
+        }
 
-          // Floor Volume Bar (throughput)
-          const volHeight = (tick.volume / 1200) * 35;
-          draw3DBox(
-            posX, 75, 14, 14, 0, volHeight,
-            'rgba(56, 189, 248, 0.35)', 'rgba(56, 189, 248, 0.6)', false
-          );
+        // Vertical drop line to floor for Optimized
+        if (visibleLines !== 'previous') {
+          ctx.beginPath();
+          ctx.setLineDash([2, 3]);
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.moveTo(pOpt.x, pOpt.y);
+          ctx.lineTo(fOpt.x, fOpt.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
 
-          // Floating Tick Tag on floor
-          const pFloor = project3D(posX, 0, 0, cx, cy);
-          ctx.save();
-          ctx.font = '10px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = isHovered ? '#38bdf8' : 'rgba(255, 255, 255, 0.6)';
-          ctx.fillText(`T${idx + 1}:${tick.short}`, pFloor.x, pFloor.y + 16);
-          ctx.font = 'bold 9px monospace';
-          ctx.fillStyle = '#34d399';
-          ctx.fillText(`▲ +${tick.speedup}x`, pFloor.x, pFloor.y + 28);
-          ctx.restore();
-        });
+        // 3D Acceleration Vector Connector between the two lines
+        if (visibleLines === 'both') {
+          ctx.beginPath();
+          ctx.setLineDash([3, 3]);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+          ctx.lineWidth = 1.4;
+          ctx.moveTo(pPrev.x, pPrev.y);
+          ctx.lineTo(pOpt.x, pOpt.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
 
-      } else {
-        // --- 3D MOUNTAIN RIBBON TREND MODE ---
-        // Render dual continuous ribbon mountain streams with filled area curtains
-        const ptsOld = [];
-        const ptsNew = [];
-        const ptsFloorOld = [];
-        const ptsFloorNew = [];
+        // Floor label for task
+        const midFloor = project3D(prevPoints[idx].rawX, 0, 0, cx, cy);
+        ctx.save();
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.fillText(task.short, midFloor.x, midFloor.y + 16);
 
-        TICKS.forEach((tick, idx) => {
-          const posX = (idx - 2) * spacingX;
-          const yOld = scaleY(tick.open);
-          const yNew = scaleY(tick.close);
+        // Speedup pill text on floor
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`+${task.speedup}x`, midFloor.x, midFloor.y + 27);
+        ctx.restore();
+      });
 
-          ptsOld.push(project3D(posX, yOld, -30, cx, cy));
-          ptsFloorOld.push(project3D(posX, 0, -30, cx, cy));
-
-          ptsNew.push(project3D(posX, yNew, 30, cx, cy));
-          ptsFloorNew.push(project3D(posX, 0, 30, cx, cy));
-        });
-
-        // 1. Draw Red Mountain Ribbon Curtain (Mistral 1T Latency Mountain)
+      // 4. Draw 3D Continuous Lines
+      // A. Previous Line (Mistral - Red / Crimson)
+      if (visibleLines !== 'optimized') {
+        // Line Shadow / Glow
         ctx.beginPath();
-        ctx.moveTo(ptsOld[0].x, ptsOld[0].y);
-        for (let i = 1; i < ptsOld.length; i++) ctx.lineTo(ptsOld[i].x, ptsOld[i].y);
-        for (let i = ptsOld.length - 1; i >= 0; i--) ctx.lineTo(ptsFloorOld[i].x, ptsFloorOld[i].y);
-        ctx.closePath();
-        const gradOld = ctx.createLinearGradient(0, cy - 120, 0, cy);
-        gradOld.addColorStop(0, 'rgba(244, 63, 94, 0.45)');
-        gradOld.addColorStop(1, 'rgba(244, 63, 94, 0.02)');
-        ctx.fillStyle = gradOld;
-        ctx.fill();
-
-        // Top Neon Ridge Line (Red)
-        ctx.beginPath();
-        ctx.moveTo(ptsOld[0].x, ptsOld[0].y);
-        for (let i = 1; i < ptsOld.length; i++) ctx.lineTo(ptsOld[i].x, ptsOld[i].y);
-        ctx.strokeStyle = '#f43f5e';
-        ctx.lineWidth = 2.5;
+        ctx.moveTo(prevPoints[0].pt.x, prevPoints[0].pt.y);
+        for (let i = 1; i < prevPoints.length; i++) {
+          ctx.lineTo(prevPoints[i].pt.x, prevPoints[i].pt.y);
+        }
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.25)';
+        ctx.lineWidth = 7;
         ctx.stroke();
 
-        // 2. Draw Green Mountain Ribbon Curtain (Nemotron Sub-Second Baseline)
+        // Solid Core Line
         ctx.beginPath();
-        ctx.moveTo(ptsNew[0].x, ptsNew[0].y);
-        for (let i = 1; i < ptsNew.length; i++) ctx.lineTo(ptsNew[i].x, ptsNew[i].y);
-        for (let i = ptsNew.length - 1; i >= 0; i--) ctx.lineTo(ptsFloorNew[i].x, ptsFloorNew[i].y);
-        ctx.closePath();
-        const gradNew = ctx.createLinearGradient(0, cy - 30, 0, cy + 40);
-        gradNew.addColorStop(0, 'rgba(16, 185, 129, 0.6)');
-        gradNew.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
-        ctx.fillStyle = gradNew;
-        ctx.fill();
-
-        // Top Neon Ridge Line (Green)
-        ctx.beginPath();
-        ctx.moveTo(ptsNew[0].x, ptsNew[0].y);
-        for (let i = 1; i < ptsNew.length; i++) ctx.lineTo(ptsNew[i].x, ptsNew[i].y);
-        ctx.strokeStyle = '#34d399';
+        ctx.moveTo(prevPoints[0].pt.x, prevPoints[0].pt.y);
+        for (let i = 1; i < prevPoints.length; i++) {
+          ctx.lineTo(prevPoints[i].pt.x, prevPoints[i].pt.y);
+        }
+        ctx.strokeStyle = '#f43f5e';
         ctx.lineWidth = 2.8;
         ctx.stroke();
+      }
 
-        // Nodes on points
-        TICKS.forEach((tick, idx) => {
-          const po = ptsOld[idx];
-          const pn = ptsNew[idx];
+      // B. Optimized Line (Nemotron - Emerald Green)
+      if (visibleLines !== 'previous') {
+        // Line Glow
+        ctx.beginPath();
+        ctx.moveTo(optPoints[0].pt.x, optPoints[0].pt.y);
+        for (let i = 1; i < optPoints.length; i++) {
+          ctx.lineTo(optPoints[i].pt.x, optPoints[i].pt.y);
+        }
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+        ctx.lineWidth = 8;
+        ctx.stroke();
 
-          // Dotted laser connector
+        // Solid Core Line
+        ctx.beginPath();
+        ctx.moveTo(optPoints[0].pt.x, optPoints[0].pt.y);
+        for (let i = 1; i < optPoints.length; i++) {
+          ctx.lineTo(optPoints[i].pt.x, optPoints[i].pt.y);
+        }
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3.2;
+        ctx.stroke();
+      }
+
+      // 5. Draw 3D Data Nodes & Labels
+      // Previous Model Nodes (Red)
+      if (visibleLines !== 'optimized') {
+        prevPoints.forEach((p, idx) => {
+          if (selectedTask !== 'all' && selectedTask != idx) return;
+          const isHov = hoveredPoint && hoveredPoint.idx === idx && hoveredPoint.line === 'prev';
+
           ctx.beginPath();
-          ctx.setLineDash([2, 3]);
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-          ctx.lineWidth = 1.2;
-          ctx.moveTo(po.x, po.y);
-          ctx.lineTo(pn.x, pn.y);
+          ctx.arc(p.pt.x, p.pt.y, isHov ? 7 : 5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+          ctx.strokeStyle = isHov ? '#ffffff' : '#fecaca';
+          ctx.lineWidth = 1.5;
           ctx.stroke();
-          ctx.setLineDash([]);
 
-          // Nodes
-          ctx.beginPath();
-          ctx.arc(po.x, po.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = '#f43f5e';
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(pn.x, pn.y, 5, 0, Math.PI * 2);
-          ctx.fillStyle = '#10b981';
-          ctx.fill();
-
-          // Labels
+          // Value label
           ctx.save();
           ctx.font = 'bold 9px monospace';
           ctx.textAlign = 'center';
           ctx.fillStyle = '#fca5a5';
-          ctx.fillText(`${tick.open.toFixed(1)}s`, po.x, po.y - 7);
+          ctx.fillText(`${p.task.prevLatency.toFixed(1)}s`, p.pt.x, p.pt.y - 8);
+          ctx.restore();
+        });
+      }
+
+      // Optimized Model Nodes (Green)
+      if (visibleLines !== 'previous') {
+        optPoints.forEach((p, idx) => {
+          if (selectedTask !== 'all' && selectedTask != idx) return;
+          const isHov = hoveredPoint && hoveredPoint.idx === idx && hoveredPoint.line === 'opt';
+
+          ctx.beginPath();
+          ctx.arc(p.pt.x, p.pt.y, isHov ? 8 : 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#10b981';
+          ctx.fill();
+          ctx.strokeStyle = isHov ? '#ffffff' : '#d1fae5';
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          // Value label
+          ctx.save();
+          ctx.font = 'bold 9px monospace';
+          ctx.textAlign = 'center';
           ctx.fillStyle = '#6ee7b7';
-          ctx.fillText(`${tick.close.toFixed(2)}s`, pn.x, pn.y - 8);
+          ctx.fillText(`${p.task.optLatency.toFixed(2)}s`, p.pt.x, p.pt.y - 9);
           ctx.restore();
         });
       }
@@ -577,8 +499,8 @@
 
     canvas.addEventListener('mousedown', (e) => {
       isDragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
       autoRotate = false;
       document.getElementById('auto-state').textContent = 'OFF';
       document.getElementById('auto-state').className = 'text-zinc-400 font-semibold';
@@ -588,12 +510,12 @@
 
     window.addEventListener('mousemove', (e) => {
       if (isDragging) {
-        const dx = e.clientX - lastX;
-        const dy = e.clientY - lastY;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
         yaw += dx * 0.009;
         pitch = Math.max(0.08, Math.min(1.2, pitch - dy * 0.009));
-        lastX = e.clientX;
-        lastY = e.clientY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
         draw();
       } else {
         handleHover(e);
@@ -604,8 +526,8 @@
     canvas.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
         isDragging = true;
-        lastX = e.touches[0].clientX;
-        lastY = e.touches[0].clientY;
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
         autoRotate = false;
         document.getElementById('auto-state').textContent = 'OFF';
       }
@@ -613,25 +535,26 @@
 
     window.addEventListener('touchmove', (e) => {
       if (isDragging && e.touches.length === 1) {
-        const dx = e.touches[0].clientX - lastX;
-        const dy = e.touches[0].clientY - lastY;
+        const dx = e.touches[0].clientX - lastMouseX;
+        const dy = e.touches[0].clientY - lastMouseY;
         yaw += dx * 0.01;
         pitch = Math.max(0.08, Math.min(1.2, pitch - dy * 0.01));
-        lastX = e.touches[0].clientX;
-        lastY = e.touches[0].clientY;
+        lastMouseX = e.touches[0].clientX;
+        lastMouseY = e.touches[0].clientY;
         draw();
       }
     }, { passive: true });
 
     window.addEventListener('touchend', () => { isDragging = false; });
 
+    // Wheel Zoom
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      zoom = Math.max(0.6, Math.min(1.7, zoom - e.deltaY * 0.0012));
+      zoom = Math.max(0.65, Math.min(1.6, zoom - e.deltaY * 0.0012));
       draw();
     }, { passive: false });
 
-    // Hover crosshair detection
+    // Hover Inspection
     function handleHover(e) {
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -639,43 +562,51 @@
 
       let found = null;
       const cx = canvas.clientWidth / 2;
-      const cy = canvas.clientHeight / 2 + 40;
+      const cy = canvas.clientHeight / 2 + 35;
       const spacingX = 75;
+      const maxLat = 42;
+      const maxHeightPx = 145;
+      const scaleY = (val) => Math.max(4, (val / maxLat) * maxHeightPx);
 
-      TICKS.forEach((tick, idx) => {
-        if (selectedTick !== 'all' && selectedTick != idx) return;
+      TASKS.forEach((task, idx) => {
+        if (selectedTask !== 'all' && selectedTask != idx) return;
         const posX = (idx - 2) * spacingX;
-        const pMid = project3D(posX, 20, 0, cx, cy);
-        const dist = Math.hypot(mx - pMid.x, my - pMid.y);
-        if (dist < 50) {
-          found = tick;
+
+        // Check distance to Opt point
+        const ptOpt = project3D(posX, scaleY(task.optLatency), 45, cx, cy);
+        if (Math.hypot(mx - ptOpt.x, my - ptOpt.y) < 20) {
+          found = { idx: idx, task: task, line: 'opt' };
+        }
+
+        // Check distance to Prev point
+        const ptPrev = project3D(posX, scaleY(task.prevLatency), -45, cx, cy);
+        if (Math.hypot(mx - ptPrev.x, my - ptPrev.y) < 20) {
+          found = { idx: idx, task: task, line: 'prev' };
         }
       });
 
       if (found) {
-        hoveredTick = found;
-        showTooltip(found, e.clientX - rect.left, e.clientY - rect.top);
+        hoveredPoint = found;
+        showTooltip(found.task, e.clientX - rect.left, e.clientY - rect.top);
         draw();
       } else {
-        if (hoveredTick) {
-          hoveredTick = null;
+        if (hoveredPoint) {
+          hoveredPoint = null;
           hideTooltip();
           draw();
         }
       }
     }
 
-    function showTooltip(tick, x, y) {
-      document.getElementById('st-ticker').textContent = `$TICK #${tick.id + 1}`;
-      document.getElementById('st-task').textContent = tick.task;
-      document.getElementById('st-open').textContent = `${tick.open.toFixed(2)}s (Old)`;
-      document.getElementById('st-close').textContent = `${tick.close.toFixed(2)}s (New)`;
-      document.getElementById('st-range').textContent = `${tick.low.toFixed(2)}s - ${tick.high.toFixed(1)}s`;
-      document.getElementById('st-speedup').textContent = `+${tick.speedup.toFixed(1)}x (-${tick.drop}%)`;
+    function showTooltip(task, x, y) {
+      document.getElementById('tt-title').textContent = task.name;
+      document.getElementById('tt-prev').textContent = `${task.prevLatency.toFixed(2)}s`;
+      document.getElementById('tt-opt').textContent = `${task.optLatency.toFixed(2)}s`;
+      document.getElementById('tt-speedup').textContent = `${task.speedup.toFixed(1)}x faster (-${task.dropPercent}%)`;
 
       tooltip.classList.remove('hidden');
-      const clampX = Math.min(x + 12, canvas.clientWidth - 260);
-      const clampY = Math.max(10, y - 80);
+      const clampX = Math.min(x + 12, canvas.clientWidth - 230);
+      const clampY = Math.max(10, y - 70);
       tooltip.style.left = `${clampX}px`;
       tooltip.style.top = `${clampY}px`;
     }
@@ -684,21 +615,32 @@
       tooltip.classList.add('hidden');
     }
 
-    // Controls
-    const btnCandle = document.getElementById('btn-candlestick');
-    const btnMountain = document.getElementById('btn-mountain');
+    // --- Buttons & Controls ---
+    const btnBoth = document.getElementById('btn-show-both');
+    const btnOpt = document.getElementById('btn-show-optimized');
+    const btnPrev = document.getElementById('btn-show-previous');
 
-    btnCandle.addEventListener('click', () => {
-      chartStyle = 'candlestick';
-      btnCandle.className = 'px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all';
-      btnMountain.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+    btnBoth.addEventListener('click', () => {
+      visibleLines = 'both';
+      btnBoth.className = 'px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all';
+      btnOpt.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+      btnPrev.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
       draw();
     });
 
-    btnMountain.addEventListener('click', () => {
-      chartStyle = 'mountain';
-      btnMountain.className = 'px-2.5 py-1 rounded font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition-all';
-      btnCandle.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+    btnOpt.addEventListener('click', () => {
+      visibleLines = 'optimized';
+      btnOpt.className = 'px-2.5 py-1 rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all';
+      btnBoth.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+      btnPrev.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+      draw();
+    });
+
+    btnPrev.addEventListener('click', () => {
+      visibleLines = 'previous';
+      btnPrev.className = 'px-2.5 py-1 rounded font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all';
+      btnBoth.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
+      btnOpt.className = 'px-2.5 py-1 rounded font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] border border-transparent transition-all';
       draw();
     });
 
@@ -710,8 +652,8 @@
     });
 
     document.getElementById('btn-reset').addEventListener('click', () => {
-      yaw = 0.58;
-      pitch = 0.35;
+      yaw = 0.52;
+      pitch = 0.38;
       zoom = 1.05;
       autoRotate = true;
       document.getElementById('auto-state').textContent = 'ON';
@@ -719,13 +661,13 @@
       draw();
     });
 
-    document.querySelectorAll('.tick-btn').forEach(btn => {
+    document.querySelectorAll('.task-pill').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tick-btn').forEach(b => {
-          b.className = 'tick-btn px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+        document.querySelectorAll('.task-pill').forEach(b => {
+          b.className = 'task-pill px-2 py-0.5 rounded text-[11px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
         });
-        btn.className = 'tick-btn px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-[var(--foreground)]';
-        selectedTick = btn.dataset.tick;
+        btn.className = 'task-pill px-2 py-0.5 rounded text-[11px] font-medium bg-white/10 text-[var(--foreground)]';
+        selectedTask = btn.dataset.task;
         draw();
       });
     });

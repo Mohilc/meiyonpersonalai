@@ -124,4 +124,7 @@ def test_task_server_tools_and_commands():
     # Clean up created task
     task_service.delete_task(task_id)
     task_service.delete_task(imp_data["task_id"])
+    for t in task_service.list_tasks():
+        if t.title == "Test Bot Task":
+            task_service.delete_task(t.id)
 
