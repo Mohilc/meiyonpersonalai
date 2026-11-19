@@ -29,7 +29,13 @@ logger = logging.getLogger(__name__)
 try:
     from langchain_core.tools import tool
     from langchain_openai import ChatOpenAI
-    from langchain.agents import create_agent
+    try:
+        from langchain.agents import create_agent
+    except (ImportError, AttributeError):
+        try:
+            from langgraph.prebuilt import create_react_agent as create_agent
+        except (ImportError, AttributeError):
+            from langchain.agents import create_tool_calling_agent as create_agent
     from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
     LANGCHAIN_AVAILABLE = True
 except ImportError:

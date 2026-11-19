@@ -21,9 +21,12 @@ mcp>=1.0.0
 playwright>=1.49.0
 
 # Agentic AI & LangChain Framework
-langchain>=1.5.0
-langchain-core>=1.8.0
-langchain-openai>=1.8.0
+langchain>=0.3.0; python_version < '3.11'
+langchain-core>=0.3.0; python_version < '3.11'
+langchain-openai>=0.2.0; python_version < '3.11'
+langchain>=1.5.0; python_version >= '3.11'
+langchain-core>=1.8.0; python_version >= '3.11'
+langchain-openai>=1.8.0; python_version >= '3.11'
 
 # Testing
 pytest>=8.3.0
