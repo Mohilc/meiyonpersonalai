@@ -95,12 +95,15 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         has_poller = any("telegram" in t.lower() or "poller" in t.lower() for t in threads)
         tok_set = bool(settings.TELEGRAM_BOT_TOKEN)
         masked_tok = settings.TELEGRAM_BOT_TOKEN[:6] + "..." + settings.TELEGRAM_BOT_TOKEN[-4:] if tok_set else "NOT SET"
+        from app.services import agent_service
+        agent_status = "🟢 Active (12 tools)" if agent_service.is_agent_available() else "🔴 Inactive"
         return (
             f"🤖 *Meiyon System Diagnostics:*\n"
             f"• *Telegram Enabled:* `{settings.TELEGRAM_ENABLED}`\n"
             f"• *Telegram Token:* `{masked_tok}`\n"
             f"• *Telegram Allowed Chat ID:* `{settings.TELEGRAM_ALLOWED_CHAT_ID or 'Not Set (Open)'}`\n"
             f"• *Telegram Poller Thread:* `{'🟢 RUNNING' if has_poller else '🔴 NOT RUNNING'}`\n"
+            f"• *LangChain Agentic AI:* `{agent_status}`\n"
             f"• *Active Threads:* `{', '.join(threads)}`\n"
             f"• *Supabase Connected:* `{'🟢 Yes' if bool(settings.SUPABASE_URL and settings.SUPABASE_KEY) else '❌ No'}`"
         )
@@ -200,7 +203,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
         )
 
     is_briefing_query = cmd in ("/briefing", "briefing", "today", "schedule", "daily briefing") or any(p in cmd for p in (
-        "give me my briefing", "what are my priorities", "what should i do today",
+        "daily briefing", "briefing", "give me my briefing", "what are my priorities", "what should i do today",
         "today's briefing", "today's agenda", "today's priorities", "brief me",
         "morning briefing", "what's on my schedule", "show my schedule"
     ))
@@ -475,7 +478,7 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"📋 *Active Commitments & Tasks*",
             f"• *Pending:* {len(tasks)} tasks on your board\n"
         ]
-        for idx, t in enumerate(tasks[:7], 1):
+        for idx, t in enumerate(tasks[:20], 1):
             due = f" • Due: `{t.due_date[:10]}`" if t.due_date else ""
             pri_badge = "🔴 URGENT" if t.priority.value == "P1_URGENT" else ("🟡 HIGH" if t.priority.value == "P2_HIGH" else "🟢 NORMAL")
             short_id = t.id[:8]
@@ -1051,14 +1054,30 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
                 logger.warning("SerpApi grounding failed: %s", str(e))
 
     history = get_conversation_history(sender_id)
-    ai_response = llm_service.generate_completion(
-        prompt=clean_text,
-        system_prompt=system_prompt,
-        conversation_history=history,
-        task_type="general",
-        max_tokens=600,
-        temperature=0.75
-    )
+
+    # 6. Autonomous LangChain Agentic Execution (Tool-calling multi-step reasoning)
+    ai_response = None
+    try:
+        from app.services import agent_service
+        if agent_service.is_agent_available():
+            ai_response = agent_service.run_agent(
+                prompt=clean_text,
+                conversation_history=history,
+                platform=platform
+            )
+    except Exception as e:
+        logger.warning("LangChain agent execution fell back to LLM completion: %s", str(e))
+
+    # Fallback to direct NVIDIA NIM LLM completion if agent didn't return a response
+    if not ai_response:
+        ai_response = llm_service.generate_completion(
+            prompt=clean_text,
+            system_prompt=system_prompt,
+            conversation_history=history,
+            task_type="general",
+            max_tokens=600,
+            temperature=0.75
+        )
     final_reply = prefix_ack + (ai_response or llm_service.generate_contextual_fallback(clean_text, candidate_name=profile.full_name))
     
     # Store user message and assistant reply in conversational memory buffer

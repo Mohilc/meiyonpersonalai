@@ -19,6 +19,7 @@ license: mit
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![LangChain](https://img.shields.io/badge/LangChain-Agentic%20AI%20%7C%2012%20Tools-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
 [![Zapier MCP](https://img.shields.io/badge/Zapier%20MCP-Gmail%20%7C%20LinkedIn%20%7C%20Tasks-FF4F00?style=for-the-badge&logo=zapier&logoColor=white)](https://zapier.com)
 [![FastMCP](https://img.shields.io/badge/FastMCP-2.3.0-6366F1?style=for-the-badge&logo=anthropic&logoColor=white)](https://modelcontextprotocol.io)
 [![Supabase](https://img.shields.io/badge/Supabase-Cloud%20Storage%20%26%20Persistence-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
@@ -26,7 +27,7 @@ license: mit
 [![Academic Tracker](https://img.shields.io/badge/Academic%20Tracker-Attendance%20%7C%20Absences%20%7C%20PDF-EC4899?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://github.com/Mohilc/meiyonpersonalai)
 [![NVIDIA NIM](https://img.shields.io/badge/NVIDIA%20NIM-DiffusionGemma%20%7C%20Nemotron%20OCR%20v2-76B900?style=for-the-badge&logo=nvidia&logoColor=white)](https://build.nvidia.com)
 [![SQLite WAL](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Tests Passing](https://img.shields.io/badge/Tests-72%20Passed%20(100%25)-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests Passing](https://img.shields.io/badge/Tests-79%20Passed%20(100%25)-10B981?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org)
 [![Telegram Bot](https://img.shields.io/badge/Telegram-@Meiyon__ai__bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Meiyon_ai_bot)
 [![WhatsApp Chat](https://img.shields.io/badge/WhatsApp-Twilio%20API-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://twilio.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
@@ -296,7 +297,53 @@ flowchart LR
 
 ---
 
-## 8. Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)
+## 8. LangChain Agentic AI Orchestration & Autonomous Tool Suite
+
+Meiyon features an autonomous **LangChain Agent** (`app/services/agent_service.py`) integrated directly into the conversational pipeline and REST API. Rather than relying solely on static intent-matching, the agent uses **NVIDIA NIM** (`mistralai/mistral-large-4-1t-a52b`) with native tool-calling capabilities to reason, plan, and execute multi-step actions autonomously across 12 domain tools.
+
+```mermaid
+flowchart TD
+    UserQuery["User Message (e.g. 'Check my AI attendance, and if low, create an urgent study task')"] --> AgentOrchestrator["LangChain Agentic Orchestrator (NVIDIA NIM)"]
+    
+    subgraph ToolSuite ["Autonomous 12-Tool Suite (@tool)"]
+        T1["get_college_attendance"]
+        T2["mark_subject_attendance"]
+        T3["get_pending_assignments"]
+        T4["add_college_assignment"]
+        T5["list_scheduled_tasks"]
+        T6["add_task_commitment"]
+        T7["complete_task_commitment"]
+        T8["search_google_web (SerpApi)"]
+        T9["get_recent_inbox_emails (Zapier MCP)"]
+        T10["get_executive_briefing"]
+        T11["remember_user_rule"]
+        T12["get_learned_memories"]
+    end
+    
+    AgentOrchestrator -->|"Reasoning & Tool Selection"| ToolSuite
+    ToolSuite -->|"Observes Data & State"| AgentOrchestrator
+    AgentOrchestrator -->|"Multi-Step Synthesis"| FinalResponse["Empathetic, Actionable Human Response"]
+```
+
+### The 12 Agentic Tools:
+| Tool Name | Domain | Capability |
+| :--- | :--- | :--- |
+| `get_college_attendance` | Academic | Overall %, subject breakdown, 75% alerts & classes needed |
+| `mark_subject_attendance`| Academic | Log PRESENT or ABSENT for any class with optional notes |
+| `get_pending_assignments`| Academic | View pending submissions, deadlines, and assignment IDs |
+| `add_college_assignment` | Academic | Add new assignment commitment with deadline |
+| `list_scheduled_tasks`   | Tasks    | Retrieve active commitments with priority tags (`P1`–`P4`) |
+| `add_task_commitment`    | Tasks    | Add task (synced with SQLite WAL & Zapier Tasks MCP) |
+| `complete_task_commitment`| Tasks   | Mark task completed by ID or 8-char prefix |
+| `search_google_web`      | Intel    | Live Google search via SerpApi for facts, news, and research |
+| `get_recent_inbox_emails`| Comms    | Live Gmail triage via Zapier Mail MCP & high-speed IMAP |
+| `get_executive_briefing` | Strategy | Fetch daily top 3 priorities, overdue items & advice |
+| `remember_user_rule`     | Memory   | Persist habits, tone preferences, or rules permanently |
+| `get_learned_memories`   | Memory   | Query all active self-learned rules from SQLite WAL |
+
+---
+
+## 9. Mobile Messaging & Dual-Channel Executive AI (Telegram & WhatsApp)
 
 Meiyon acts as an executive chief-of-staff accessible from anywhere via Telegram (`@Meiyon_ai_bot`) and WhatsApp:
 
@@ -335,7 +382,7 @@ When you speak to Meiyon without slash commands, the system activates a warm, co
 
 ---
 
-## 9. Cybersecurity & Threat Defense System
+## 10. Cybersecurity & Threat Defense System
 
 - **Zero Backdoor Guarantee & Locked Outbound Channels**: Outbound WhatsApp and messaging endpoints strictly validate destination numbers against `WHATSAPP_ALLOWED_NUMBER`, completely preventing unauthorized third-party abuse or Twilio credit draining.
 - **Strict Path Traversal Defenses**: System restore (`/api/system/restore`) and Supabase cloud restore (`/api/supabase/restore`) strictly enforce `Path(name).name` sanitization, extension validation, and boundary jail checks to defeat directory traversal attacks (`../../`).
@@ -352,7 +399,7 @@ When you speak to Meiyon without slash commands, the system activates a warm, co
 
 ---
 
-## 10. Complete Repository Structure
+## 11. Complete Repository Structure
 
 ```
 agenticai/
@@ -386,6 +433,7 @@ agenticai/
 │   │   └── task.py                   # Task & reminder models
 │   ├── services/                     # Business Logic & Integrations
 │   │   ├── academic_service.py       # Attendance tracking, absences & ReportLab PDF
+│   │   ├── agent_service.py          # LangChain autonomous agent & 12-tool suite
 │   │   ├── audit_service.py          # Security audit trail & gate evaluation
 │   │   ├── briefing_service.py       # Priority ranking & executive briefing
 │   │   ├── communication_service.py  # Injection sanitizer & recruiter triage
@@ -420,8 +468,9 @@ agenticai/
 │   ├── task_server.py                # Tasks & Important Data Server (Zapier MCP / SQLite)
 │   ├── gmail_server.py               # Gmail MCP server (Zapier MCP / IMAP/SMTP)
 │   └── linkedin_server.py            # LinkedIn MCP server (Zapier MCP / Playwright)
-├── tests/                            # Automated Pytest Suite (72/72 Tests Passing)
+├── tests/                            # Automated Pytest Suite (79/79 Tests Passing)
 │   ├── test_academic.py              # Attendance, absence, assignment & PDF tests (5 tests)
+│   ├── test_agent.py                 # LangChain agentic reasoning & tool tests (7 tests)
 │   ├── test_api.py                   # REST endpoint, security & backdoor tests (6 tests)
 │   ├── test_approvals.py             # Security gate & audit tests (1 test)
 │   ├── test_briefing.py              # Briefing & priority ranking tests (1 test)
@@ -444,10 +493,11 @@ agenticai/
 
 ---
 
-## 11. REST API Documentation & Endpoints
+## 12. REST API Documentation & Endpoints
 
 | Method | Endpoint | Description | Security Guardrail |
 | :--- | :--- | :--- | :--- |
+| `POST` | `/api/communication/agent/chat` | Multi-step autonomous reasoning across 12 tools | Agentic Tool Calling |
 | `GET` | `/api/academic/attendance/summary` | Overall and subject-wise attendance percentages | Read-only |
 | `POST` | `/api/academic/attendance/mark` | Logs class attendance (PRESENT / ABSENT) with notes | Ledger Write |
 | `GET` | `/api/academic/attendance/absences` | Detailed absence history with notes and timestamps | Read-only |
@@ -514,7 +564,7 @@ rootdir: C:\Users\MOHIL\Desktop\agenticai
 plugins: anyio-4.15.1
 collected 72 items
 
-tests/test_academic.py .....                                             [  6%]
+tests/test_academic.py .....                                             [6%]
 tests/test_api.py ......                                                 [ 15%]
 tests/test_approvals.py .                                                [ 16%]
 tests/test_briefing.py .                                                 [ 18%]

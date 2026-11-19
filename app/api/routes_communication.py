@@ -133,3 +133,23 @@ async def analyze_document_ocr(
     return result
 
 
+class AgentChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[dict]] = None
+
+
+@router.post("/agent/chat")
+def chat_with_langchain_agent(payload: AgentChatRequest):
+    """Executes message through LangChain autonomous agent with tool-calling capabilities."""
+    from app.services import agent_service
+    if not agent_service.is_agent_available():
+        raise HTTPException(status_code=503, detail="LangChain agent is not configured or available.")
+    result = agent_service.run_agent(payload.message, conversation_history=payload.conversation_history)
+    return {
+        "reply": result or "Agent completed without response.",
+        "agent_available": True,
+        "tools_count": len(agent_service.ALL_AGENT_TOOLS)
+    }
+
+
+

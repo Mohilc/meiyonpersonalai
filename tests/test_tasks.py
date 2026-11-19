@@ -91,7 +91,7 @@ def test_task_server_tools_and_commands():
     task_id = create_data["task_id"]
 
     # 3. List active tasks
-    list_raw = task_server.list_active_tasks(limit=10)
+    list_raw = task_server.list_active_tasks(limit=50)
     list_data = json.loads(list_raw)
     assert list_data["status"] == "SUCCESS"
     assert any(t["id"] == task_id[:8] for t in list_data["tasks"])

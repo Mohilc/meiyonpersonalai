@@ -285,7 +285,7 @@ def _fetch_from_imap(max_results: int = 10, query: str = "") -> List[Dict[str, A
     results = []
     clean_password = GMAIL_APP_PASSWORD.replace(" ", "")
     
-    mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+    mail = imaplib.IMAP4_SSL("imap.gmail.com", 993, timeout=5.0)
     try:
         mail.login(GMAIL_ADDRESS, clean_password)
         mail.select("INBOX")
@@ -395,7 +395,7 @@ def read_email(message_id: str) -> str:
         e_id = message_id.replace("imap_", "")
         clean_password = GMAIL_APP_PASSWORD.replace(" ", "")
         try:
-            mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+            mail = imaplib.IMAP4_SSL("imap.gmail.com", 993, timeout=5.0)
             mail.login(GMAIL_ADDRESS, clean_password)
             mail.select("INBOX")
             res_status, data = mail.fetch(e_id.encode(), "(BODY.PEEK[])")
@@ -479,7 +479,7 @@ def send_email(to: str, subject: str, body: str, approved: bool = False) -> str:
             msg["Subject"] = subject
             msg.attach(MIMEText(body, "plain"))
             
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server_smtp:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=5.0) as server_smtp:
                 server_smtp.login(GMAIL_ADDRESS, clean_password)
                 server_smtp.send_message(msg)
                 

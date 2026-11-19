@@ -475,6 +475,11 @@ def restore_database(backup_path: Path) -> bool:
     if "user_profile" not in tables or "tasks" not in tables:
         raise ValueError("Invalid backup file: required tables missing")
         
-    # Safely copy into place
-    shutil.copy2(backup_path, settings.DB_PATH)
+    # Transactionally restore using SQLite native backup API
+    backup_conn = sqlite3.connect(backup_path)
+    target_conn = get_db_connection()
+    with target_conn:
+        backup_conn.backup(target_conn)
+    target_conn.close()
+    backup_conn.close()
     return True
