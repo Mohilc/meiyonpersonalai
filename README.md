@@ -435,7 +435,46 @@ When you speak to Meiyon without slash commands, the system activates a warm, co
 
 ---
 
-## 12. Complete Repository Structure
+## 12. EmailAI Verification RAG (Google Drive & Supabase pgvector)
+
+Meiyon includes a non-destructive, high-speed document verification engine connecting **Google Drive** (knowledge repository) with **Supabase pgvector** (sub-millisecond vector index) to verify incoming emails, evaluate recruiter credibility, and detect employment fraud.
+
+```mermaid
+flowchart TD
+    subgraph Ingestion ["1. Offline Source Document Ingestion"]
+        GD["Google Drive Source Folder"] -->|"LlamaIndex GoogleDriveReader"| Parser["Document & Metadata Extractor"]
+        Parser -->|"Allowlists, Recruiter Dirs, Scam Patterns"| Hasher["SHA-256 Idempotent Hasher"]
+        Hasher -->|"Unchanged Vectors Skipped"| PGV["Supabase pgvector<br/>(emailai_verification_vectors)"]
+    end
+
+    subgraph LivePath ["2. Fast Live Message Verification Path (< 5ms)"]
+        Msg["Incoming Email / LinkedIn Message"] --> Verifier["verify_sender_context Tool"]
+        Verifier -->|"Cosine Similarity + Lexical Match"| PGV
+        Verifier -->|"Strict JSON Trust Telemetry"| Agent["LangChain Agent / NVIDIA NIM"]
+        Agent --> Decision{"Verified Sender?"}
+        Decision -- "Verified (0.95+)" --> Safe["Contextual Autonomous Reply Drafting"]
+        Decision -- "Phishing / Low Trust" --> Alert["Risk Flagging & Security Approval Gate"]
+    end
+```
+
+### Core Architecture Invariant:
+- **Zero Drive Latency during Chat**: Google Drive is **never** queried during live user message requests. Google Drive is read strictly during explicit, manual indexing runs (`POST /api/verification/sync-drive` or standalone CLI script).
+- **Sub-Millisecond Live Query**: Live verification queries **only** the pre-indexed Supabase pgvector table, with an in-memory TTL cache delivering answers in **`< 1ms`** for repeated queries.
+- **Strict JSON Output Schema**:
+  ```json
+  {
+    "matched_entities": ["Verified ATS Domain: greenhouse.io"],
+    "domain_trust_signals": ["Domain 'greenhouse.io' matches verified enterprise talent infrastructure."],
+    "risk_flags": [],
+    "confidence_score": 0.95,
+    "source_platform": "Email",
+    "elapsed_ms": 0.8
+  }
+  ```
+
+---
+
+## 13. Complete Repository Structure
 
 ```
 agenticai/
@@ -457,6 +496,7 @@ agenticai/
 │   │   ├── routes_supabase.py        # Supabase cloud persistence, backups & files
 │   │   ├── routes_system.py          # Point-in-time backups & autonomy mode
 │   │   ├── routes_tasks.py           # Task CRUD & commitment verification
+│   │   ├── routes_verification.py    # EmailAI Verification RAG & Google Drive sync API
 │   │   └── routes_webhooks.py        # Telegram & WhatsApp live messaging webhooks
 │   ├── models/                       # Pydantic Schemas (v2)
 │   │   ├── academic.py               # Attendance, absence & assignment models
@@ -469,7 +509,7 @@ agenticai/
 │   │   └── task.py                   # Task & reminder models
 │   ├── services/                     # Business Logic & Integrations
 │   │   ├── academic_service.py       # Attendance tracking, absences & ReportLab PDF
-│   │   ├── agent_service.py          # LangChain autonomous agent & 12-tool suite
+│   │   ├── agent_service.py          # LangChain autonomous agent & 13-tool suite
 │   │   ├── audit_service.py          # Security audit trail & gate evaluation
 │   │   ├── briefing_service.py       # Priority ranking & executive briefing
 │   │   ├── communication_service.py  # Injection sanitizer & recruiter triage
@@ -482,7 +522,13 @@ agenticai/
 │   │   ├── reminder_service.py       # Background scheduler & alert delivery
 │   │   ├── resume_service.py         # ATS tailoring & application tracking
 │   │   ├── supabase_service.py       # Supabase Cloud Storage & database persistence
-│   │   └── task_service.py           # Task lifecycle persistence
+│   │   ├── task_service.py           # Task lifecycle persistence
+│   │   └── verification_rag/         # EmailAI Verification RAG Module
+│   │       ├── __init__.py           # Package coordinator & public exports
+│   │       ├── drive_sync.py         # LlamaIndex GoogleDriveReader ingestion
+│   │       ├── langchain_tool.py     # verify_sender_security_context LangChain tool
+│   │       ├── vector_index.py       # Supabase pgvector connector & idempotent upsert
+│   │       └── verifier.py           # Fast live verification engine (< 1ms query)
 │   ├── static/                       # Web Dashboard Frontend
 │   │   ├── css/style.css             # Dark Glassmorphism design tokens & styles
 │   │   ├── js/app.js                 # Single-Page Application logic & live clock
@@ -506,8 +552,11 @@ agenticai/
 │   ├── gmail_server.py               # Gmail MCP server (Zapier MCP / IMAP/SMTP)
 │   └── linkedin_server.py            # LinkedIn MCP server (Zapier MCP / Playwright)
 ├── scripts/                          # Utility & Benchmark Scripts
-│   └── generate_benchmark_graph.py   # Latency comparison visual generator
-├── tests/                            # Automated Pytest Suite (79/79 Tests Passing)
+│   ├── generate_benchmark_graph.py   # Latency comparison visual generator
+│   └── sync_verification_drive.py    # Google Drive verification sync CLI trigger
+├── sql/                              # Database Schemas & Migrations
+│   └── create_verification_vectors.sql # Standalone Supabase pgvector table DDL
+├── tests/                            # Automated Pytest Suite (86/86 Tests Passing)
 │   ├── test_academic.py              # Attendance, absence, assignment & PDF tests (5 tests)
 │   ├── test_agent.py                 # LangChain agentic reasoning & tool tests (7 tests)
 │   ├── test_api.py                   # REST endpoint, security & backdoor tests (6 tests)
@@ -523,7 +572,8 @@ agenticai/
 │   ├── test_reminders.py             # Reminder delivery & snooze tests (1 test)
 │   ├── test_search.py                # Live web search & research tests (6 tests)
 │   ├── test_supabase.py              # Supabase storage, backup & restore tests (6 tests)
-│   └── test_tasks.py                 # Task CRUD, FastMCP tools & bot commands (3 tests)
+│   ├── test_tasks.py                 # Task CRUD, FastMCP tools & bot commands (3 tests)
+│   └── test_verification_rag.py      # Verification RAG, Drive sync & pgvector tests (7 tests)
 ├── .env.example                      # Template environment variables
 ├── MCP_SETUP_GUIDE.md                # Quick visual guide for Gmail & LinkedIn setup
 ├── run.ps1                           # One-click Windows PowerShell launcher
@@ -532,11 +582,14 @@ agenticai/
 
 ---
 
-## 13. REST API Documentation & Endpoints
+## 14. REST API Documentation & Endpoints
 
 | Method | Endpoint | Description | Security Guardrail |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/communication/agent/chat` | Multi-step autonomous reasoning across 12 tools | Agentic Tool Calling |
+| `POST` | `/api/communication/agent/chat` | Multi-step autonomous reasoning across 13 tools | Agentic Tool Calling |
+| `POST` | `/api/verification/sync-drive` | Triggers Google Drive sync into Supabase pgvector | `VERIFICATION_SYNC_SECRET` |
+| `POST` | `/api/verification/verify` | Live message verification against Supabase pgvector | Fast Sub-Millisecond |
+| `GET` | `/api/verification/status` | Verification RAG vector store health and stats | Read-only |
 | `GET` | `/api/academic/attendance/summary` | Overall and subject-wise attendance percentages | Read-only |
 | `POST` | `/api/academic/attendance/mark` | Logs class attendance (PRESENT / ABSENT) with notes | Ledger Write |
 | `GET` | `/api/academic/attendance/absences` | Detailed absence history with notes and timestamps | Read-only |
@@ -587,9 +640,9 @@ uv run python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - **Web Dashboard**: [http://localhost:8000](http://localhost:8000)
 - **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### C. Running the Complete Automated Test Suite (79/79 Tests Passing)
+### C. Running the Complete Automated Test Suite (86/86 Tests Passing)
 
-The test suite thoroughly validates academic tracking, self-learning adaptation, Supabase cloud persistence, prompt injection defense, fraud scanning, security boundaries & path traversal rejection, FastMCP & Zapier tool execution, and messaging dispatchers:
+The test suite thoroughly validates academic tracking, self-learning adaptation, Supabase cloud persistence, prompt injection defense, fraud scanning, security boundaries & path traversal rejection, FastMCP & Zapier tool execution, and EmailAI Verification RAG:
 
 ```powershell
 $env:PYTHONIOENCODING="utf-8"
@@ -601,26 +654,27 @@ uv run pytest -v
 platform win32 -- Python 3.11.16, pytest-9.1.1, pluggy-1.6.0
 rootdir: C:\Users\MOHIL\Desktop\agenticai
 plugins: anyio-4.15.1
-collected 79 items
+collected 86 items
 
 tests/test_academic.py .....                                             [  6%]
-tests/test_agent.py .......                                               [ 15%]
-tests/test_api.py ......                                                 [ 22%]
-tests/test_approvals.py .                                                [ 24%]
-tests/test_briefing.py .                                                 [ 25%]
-tests/test_career.py ...                                                 [ 29%]
-tests/test_communication.py .....                                        [ 35%]
-tests/test_database.py ...                                               [ 39%]
-tests/test_learning.py ......                                            [ 46%]
-tests/test_mcp.py .......                                                [ 55%]
-tests/test_messaging.py .........                                        [ 67%]
-tests/test_prompts.py ..........                                         [ 79%]
-tests/test_reminders.py .                                                [ 81%]
-tests/test_search.py ......                                              [ 88%]
-tests/test_supabase.py ......                                            [ 96%]
-tests/test_tasks.py ...                                                  [100%]
+tests/test_agent.py .......                                               [ 14%]
+tests/test_api.py ......                                                 [ 21%]
+tests/test_approvals.py .                                                [ 22%]
+tests/test_briefing.py .                                                 [ 23%]
+tests/test_career.py ...                                                 [ 27%]
+tests/test_communication.py .....                                        [ 33%]
+tests/test_database.py ...                                               [ 36%]
+tests/test_learning.py ......                                            [ 43%]
+tests/test_mcp.py .......                                                [ 51%]
+tests/test_messaging.py .........                                        [ 62%]
+tests/test_prompts.py ..........                                         [ 73%]
+tests/test_reminders.py .                                                [ 74%]
+tests/test_search.py ......                                              [ 81%]
+tests/test_supabase.py ......                                            [ 88%]
+tests/test_tasks.py ...                                                  [ 92%]
+tests/test_verification_rag.py .......                                   [100%]
 
-======================== 79 passed in 118.25s (0:01:58) ========================
+======================== 86 passed in 170.56s (0:02:50) ========================
 ```
 
 ---
