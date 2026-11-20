@@ -43,25 +43,20 @@ def _generate_embedding(text: str) -> List[float]:
     """
     api_key = settings.AI_API_KEY or settings.NVIDIA_GENERAL_KEY or os.environ.get("OPENAI_API_KEY", "")
     
-    # Try calling OpenAI / NVIDIA NIM embedding if key is available
-    if api_key and not api_key.startswith("nvapi-xxxx"):
+    # Try calling OpenAI / NVIDIA NIM embedding if valid key is available
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if openai_key and not openai_key.startswith("sk-xxxx"):
         try:
             import openai
-            client = openai.OpenAI(
-                base_url=settings.NVIDIA_BASE_URL if "nvidia" in settings.AI_PROVIDER else None,
-                api_key=api_key,
-                timeout=5.0
-            )
-            # Try text-embedding-3-small or nvidia/llama-3.2-nv-embedqa-1b-v2
+            client = openai.OpenAI(api_key=openai_key, timeout=4.0)
             model_name = getattr(settings, "VERIFICATION_EMBEDDING_MODEL", "") or "text-embedding-3-small"
             resp = client.embeddings.create(input=[text[:2000]], model=model_name)
             emb = resp.data[0].embedding
-            # Pad or truncate to EMBEDDING_DIM if necessary
             if len(emb) < EMBEDDING_DIM:
                 emb = emb + [0.0] * (EMBEDDING_DIM - len(emb))
             return emb[:EMBEDDING_DIM]
         except Exception as e:
-            logger.debug("Live embedding API notice (%s). Using deterministic semantic projection.", str(e))
+            logger.debug("Live OpenAI embedding notice: %s", str(e))
 
     # Deterministic normalized embedding vector based on term hashing & character n-grams
     vector = [0.0] * EMBEDDING_DIM
