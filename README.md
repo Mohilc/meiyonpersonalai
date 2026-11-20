@@ -350,18 +350,16 @@ flowchart TD
 
 Meiyon's conversational and autonomous reasoning engine underwent rigorous performance tuning, transitioning from high-latency 1-trillion parameter MoE models to a low-latency dual-tier architecture powered by **NVIDIA Nemotron 3.5 Bolt (`nvidia/nemotron-3.5-bolt-e4b`)** combined with real-time Telegram typing status feedback.
 
-![Meiyon 3D Model Performance & Latency Benchmark](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/model_latency_benchmark.png)
+![Meiyon Model Performance & Latency Benchmark](https://raw.githubusercontent.com/Mohilc/meiyonpersonalai/main/assets/model_latency_benchmark.png)
 
-### 3D Multi-Line Latency & Optimization Trajectory
-The 3D multi-line visualization above charts end-to-end response latency across five core operational workloads:
-- **X-Axis (Workload Benchmark)**: Conversational chat (`"Hi"`), live academic agenda query, executive morning `/briefing`, multi-tool reasoning chains, and real-time webhook polling.
-- **Y-Axis (Model Path)**: Comparative depth channel between the previous model and the optimized edge model.
-- **Z-Axis (Response Latency)**: End-to-end response time in seconds (0s to 40s).
-- **Upper Crimson Trajectory (`mistral-large-4-1t-a52b`)**: Illustrates the elevated 30s–38s latency plateau and timeout exposure caused by heavy tool schema overhead on 1T parameter models.
-- **Lower Emerald Trajectory (`nvidia/nemotron-3.5-bolt-e4b`)**: Shows the optimized, sub-second execution baseline (0.42s–4.45s) delivering up to **51.3x faster** responses with zero timeouts.
-- **Cyan Acceleration Vectors**: Connect data nodes at each workload to illustrate the drastic 86%–98% latency reduction across every operational tier.
+### 2D Multi-Line Latency & Optimization Benchmark
+The 2D multi-line visualization above charts end-to-end response latency across five core operational workloads:
+- **Upper Crimson Dashed Line (`mistral-large-4-1t-a52b`)**: Illustrates the elevated 28s–38s latency plateau and timeout exposure caused by heavy tool schema overhead on 1T parameter models.
+- **Lower Emerald Solid Line (`nvidia/nemotron-3.5-bolt-e4b`)**: Shows the optimized, sub-second execution baseline (0.42s–4.45s) delivering up to **51.3x faster** responses with zero timeouts.
+- **Emerald Shaded Reduction Zone**: Highlights the substantial latency savings achieved across all workloads (mean latency reduction of 92.6%).
+- **Vertical Dotted Connectors**: Connect corresponding workload points with individual reduction percentages (`-98.0%` for chat, `-90.0%` for agenda, `-90.4%` for briefing, `-86.1%` for multi-tool reasoning).
 
-> 🎮 **Interactive 3D Multi-Line Explorer**: Open [`docs/interactive_model_performance.html`](docs/interactive_model_performance.html) in any browser to orbit the 3D lines in real-time, toggle line visibility, and inspect data point coordinates.
+> 🎮 **Interactive Performance Explorer**: Open [`docs/interactive_model_performance.html`](docs/interactive_model_performance.html) in any browser to toggle line visibility and inspect data point coordinates interactively.
 
 ### Quantified Latency & Throughput Benchmark
 
