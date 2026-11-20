@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str = ""
     SUPABASE_STORAGE_BUCKET: str = "meiyon-storage"
     SUPABASE_AUTO_SYNC: bool = True
+    SUPABASE_DB_URL: str = ""  # PostgreSQL connection string for pgvector
+
+    # EmailAI Verification RAG (LlamaIndex + Google Drive + Supabase pgvector)
+    GOOGLE_DRIVE_FOLDER_ID: str = ""
+    GOOGLE_SERVICE_ACCOUNT_JSON: str = ""
+    GOOGLE_SERVICE_ACCOUNT_BASE64: str = ""
+    VERIFICATION_TABLE_NAME: str = "emailai_verification_vectors"
+    VERIFICATION_SYNC_SECRET: str = "meiyon-verification-sync-secret-key"
+    VERIFICATION_EMBEDDING_MODEL: str = "text-embedding-3-small"
     
     # Timezone & Regional Defaults
     TIMEZONE: str = "Asia/Kolkata"

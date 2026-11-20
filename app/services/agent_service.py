@@ -284,6 +284,13 @@ if LANGCHAIN_AVAILABLE:
         remember_user_rule,
         get_learned_memories
     ]
+
+    # EmailAI Verification RAG tool (Supabase pgvector)
+    try:
+        from app.services.verification_rag import verify_sender_security_context
+        ALL_AGENT_TOOLS.append(verify_sender_security_context)
+    except Exception as _v_err:
+        logger.debug("Verification RAG tool lazy loading note: %s", str(_v_err))
 else:
     ALL_AGENT_TOOLS = []
 
