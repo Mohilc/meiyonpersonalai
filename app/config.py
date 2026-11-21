@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     # Autonomy Mode: ASSISTED (Mode A), SUPERVISED (Mode B), RESTRICTED_AUTONOMY (Mode C)
     AUTONOMY_MODE: str = "ASSISTED"
     
+    # Fine-Tuned Model Runtime (Unsloth / Ollama / vLLM / HuggingFace local or self-hosted)
+    FINE_TUNED_MODEL_ENABLED: bool = False
+    FINE_TUNED_MODEL_URL: str = "http://localhost:11434/v1"
+    FINE_TUNED_MODEL_NAME: str = "meiyon:latest"
+    FINE_TUNED_API_KEY: str = "ollama"
+
     # AI Provider Defaults (pluggable)
     AI_PROVIDER: str = "nvidia_nim"  # nvidia_nim, gemini, ollama, local_heuristic
     AI_API_KEY: str = ""

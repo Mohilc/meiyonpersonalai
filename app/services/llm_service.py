@@ -143,6 +143,40 @@ def generate_completion(
     if settings.AI_PROVIDER != "nvidia_nim":
         return generate_contextual_fallback(prompt)
 
+    # 0. Fine-Tuned Model priority check (e.g., local Ollama / vLLM / Unsloth fine-tuned model)
+    if getattr(settings, "FINE_TUNED_MODEL_ENABLED", False):
+        try:
+            ft_url = f"{settings.FINE_TUNED_MODEL_URL.rstrip('/')}/chat/completions"
+            ft_messages: List[Dict[str, str]] = []
+            if system_prompt:
+                ft_messages.append({"role": "system", "content": system_prompt})
+            if conversation_history:
+                for turn in conversation_history[-6:]:
+                    ft_messages.append({"role": turn.get("role", "user"), "content": turn.get("content", "")})
+            ft_messages.append({"role": "user", "content": prompt})
+
+            ft_payload = {
+                "model": settings.FINE_TUNED_MODEL_NAME,
+                "messages": ft_messages,
+                "max_tokens": min(max_tokens, 1024),
+                "temperature": temperature
+            }
+            ft_headers = {
+                "Authorization": f"Bearer {getattr(settings, 'FINE_TUNED_API_KEY', 'ollama')}",
+                "Content-Type": "application/json"
+            }
+            with httpx.Client(timeout=4.0) as ft_client:
+                ft_resp = ft_client.post(ft_url, headers=ft_headers, json=ft_payload)
+                if ft_resp.status_code == 200:
+                    ft_data = ft_resp.json()
+                    ft_choices = ft_data.get("choices", [])
+                    if ft_choices:
+                        content = ft_choices[0].get("message", {}).get("content")
+                        if content and content.strip():
+                            return content.strip()
+        except Exception as e:
+            logger.debug("Fine-tuned model query error: %s (falling back to cloud pool)", str(e))
+
     key_pool = get_api_key_pool(task_type=task_type)
     if not key_pool:
         logger.warning("No NVIDIA NIM API keys configured for task_type: %s", task_type)

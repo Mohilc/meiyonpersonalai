@@ -12,3 +12,8 @@ data/reports/
 .env.*
 *.env
 !.env.example
+
+# Training outputs & model checkpoints
+outputs/
+*.gguf
+*.bin
