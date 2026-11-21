@@ -167,6 +167,6 @@
   {
     "instruction": "List active tasks and commitments.",
     "input": "What are my current commitments?",
-    "output": "Here are your active commitments recorded in the manager:\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P1_URGENT] ⭐ IMPORTANT: Battery Min Voltage (Status: PENDING)"
+    "output": "Here are your active commitments recorded in the manager:\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)\n• [P2_HIGH] Calibrate drone IMU sensor (Status: PENDING)"
   }
 ]

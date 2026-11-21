@@ -291,6 +291,35 @@ if LANGCHAIN_AVAILABLE:
         ALL_AGENT_TOOLS.append(verify_sender_security_context)
     except Exception as _v_err:
         logger.debug("Verification RAG tool lazy loading note: %s", str(_v_err))
+
+    # Autonomous Link and Form Autofill tool
+    @tool
+    def autofill_link_or_form(url: str, job_title_or_role: Optional[str] = None, company_name: Optional[str] = None) -> str:
+        """Automatically parses an online application form, job link, Google Form, or web portal
+        and generates tailored answers and a 1-click JavaScript bookmarklet to autofill it instantly.
+        Args:
+            url: The link to the online form or job application portal
+            job_title_or_role: Optional job title or role for customized essay answers
+            company_name: Optional company or organization name
+        """
+        try:
+            from app.services.autofill import autofill_form
+            res = autofill_form(url=url, job_title=job_title_or_role, company_name=company_name)
+            lines = [
+                f"📋 Form Autofill Ready for {res.detected_platform} ({res.title})",
+                f"• URL: {res.url}",
+                f"• Fields Mapped: {res.filled_count}/{res.total_fields} ({res.fill_percentage}%)",
+                "• Key Populated Fields:"
+            ]
+            for ff in res.filled_fields[:5]:
+                val_snip = ff.suggested_value[:40] + "..." if len(ff.suggested_value) > 40 else ff.suggested_value
+                lines.append(f"  - {ff.field.label}: {val_snip} [{ff.source}]")
+            lines.append("\n⚡ 1-Click Browser Bookmarklet Generated (staged for review).")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Error autofilling form: {str(e)}"
+
+    ALL_AGENT_TOOLS.append(autofill_link_or_form)
 else:
     ALL_AGENT_TOOLS = []
 

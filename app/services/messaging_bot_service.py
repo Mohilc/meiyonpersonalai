@@ -202,6 +202,27 @@ def handle_incoming_text(sender_id: str, platform: str, text: str) -> str:
             f"Starting a fresh conversational slate. What would you like to explore next, {profile.full_name}?"
         )
 
+    if cmd.startswith("/autofill ") or cmd.startswith("autofill "):
+        target_url = clean_text.split(maxsplit=1)[1].strip()
+        try:
+            from app.services.autofill import autofill_form
+            res = autofill_form(url=target_url)
+            field_lines = []
+            for ff in res.filled_fields[:5]:
+                field_lines.append(f"• *{ff.field.label}:* `{ff.suggested_value[:35]}`")
+            fields_str = "\n".join(field_lines)
+            return (
+                f"📋 *MEIYON AUTOFILL ENGINE*\n\n"
+                f"• *Platform:* {res.detected_platform} ({res.title})\n"
+                f"• *Target Link:* {res.url}\n"
+                f"• *Coverage:* {res.filled_count}/{res.total_fields} fields mapped ({res.fill_percentage}%)\n\n"
+                f"✅ *Sample Pre-Filled Values:*\n{fields_str}\n\n"
+                f"💡 *1-Click Bookmarklet:* Use `/api/autofill/fill` to retrieve the complete JavaScript bookmarklet or Playwright automation script.\n"
+                f"🛡️ *Status:* Staged for human review."
+            )
+        except Exception as e:
+            return f"❌ Error autofilling form: {str(e)}"
+
     is_briefing_query = cmd in ("/briefing", "briefing", "today", "schedule", "daily briefing") or any(p in cmd for p in (
         "daily briefing", "briefing", "give me my briefing", "what are my priorities", "what should i do today",
         "today's briefing", "today's agenda", "today's priorities", "brief me",
